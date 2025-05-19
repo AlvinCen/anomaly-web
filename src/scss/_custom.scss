@@ -1,0 +1,189 @@
+// Here you can add other styles
+#invoice-POS {
+    box-shadow: 0 0 1in -0.25in rgba(0, 0, 0, 0.5);
+    padding: 2mm;
+    margin: 0 auto;
+    width: 58mm;
+    background: #FFF;
+    print-color-adjust: exact;
+
+
+    ::selection {
+        background: #f31544;
+        color: #FFF;
+    }
+
+    ::moz-selection {
+        background: #f31544;
+        color: #FFF;
+    }
+
+    h1 {
+        font-size: 1.5em;
+        color: #222;
+    }
+
+    h2 {
+        font-size: .9em;
+    }
+
+    h3 {
+        font-size: 1.2em;
+        font-weight: 300;
+        line-height: 2em;
+    }
+
+    p {
+        font-size: .6em;
+        color: #666;
+        line-height: 1.2em;
+    }
+
+    #mid,
+    #bot {
+        /* Targets all id with 'col-' */
+        border-bottom: 1px solid #EEE;
+    }
+
+    #top {
+        min-height: 100px;
+    }
+
+    #bot {
+        min-height: 50px;
+        margin-top: 10px;
+    }
+
+    #top .logo {
+        //float: left;
+        height: 140px;
+        width: 140px;
+        background: url(../assets/images/logo_black.png) no-repeat;
+        background-size: 140px 140px;
+    }
+
+    .clientlogo {
+        float: left;
+        height: 60px;
+        width: 60px;
+        background: url(http://michaeltruong.ca/images/client.jpg) no-repeat;
+        background-size: 60px 60px;
+        border-radius: 50px;
+    }
+
+    .info {
+        display: block;
+        //float:left;
+        margin-left: 0;
+    }
+
+    .title {
+        float: right;
+    }
+
+    .title p {
+        text-align: right;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    td {
+        //padding: 5px 0 5px 15px;
+        //border: 1px solid #EEE
+    }
+
+    .tabletitle {
+        //padding: 5px;
+        font-size: .5em;
+    }
+
+    .tableitem {
+        max-width: 24mm;
+
+    }
+
+    .ellipsis {
+        max-width: 23mm;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        /* Menampilkan maksimal 2 baris teks */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .service {
+        border-bottom: 1px solid #EEE;
+    }
+
+    .item {
+        width: 24mm;
+        max-width: 24mm;
+    }
+
+    .itemtext {
+        font-size: .5em;
+    }
+
+    #legalcopy {
+        margin-top: 5mm;
+    }
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.close-btn:hover {
+    background-color: #e96d6d !important;
+}
+
+.form-switch {
+    display: inline-flex !important;
+}
+
+@media print {
+    @page {
+        size: 80mm 200mm;
+    }
+}
+
+.pagination-container {
+    display: flex;
+    // justify-content: center;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.pagination-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.pagination-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.pagination-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.no-border {
+    border: none;
+}
+
+.fixed-bottom-cart {
+    position: fixed;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    bottom: 0;
+    right: 0 !important;
+  }
+
+  .input-bayar:hover{
+    border-color: rgba(88, 86, 214, 1) !important;
+    background-color: #f7f7f7;
+}

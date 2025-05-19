@@ -1,0 +1,7 @@
+❌ Error processing change stream: Cannot read properties of undefined (reading 'length')
+❌ Error processing change stream: Cannot apply $inc to a value of non-numeric type. {_id: ObjectId('682acf33169251b0c2933eda')} has the field 'qty' of non-numeric type string
+❌ Error processing change stream: Cannot apply $inc to a value of non-numeric type. {_id: ObjectId('682acf33169251b0c2933eda')} has the field 'qty' of non-numeric type string
+❌ Error processing change stream: Cannot read properties of undefined (reading 'length')
+❌ Error processing change stream: Cannot read properties of undefined (reading 'length')
+❌ Error processing change stream: Cannot read properties of undefined (reading 'length')
+❌ Error processing change stream: Cannot read properties of undefined (reading 'length')

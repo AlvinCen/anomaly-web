@@ -1,0 +1,147 @@
+// src/contexts/AuthContext.js
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, db, firestore } from './Firebase';
+import { collection, query, where, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import bcrypt from 'bcryptjs';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setcurrentUser] = useState(null);
+  const [role, setRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const login = async (username, password) => {
+    try {
+      const email = `${username}@dicendelight.com`; // Buat email dari username
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      // console.log("User logged in:", user);
+      if (user) {
+        const message = JSON.stringify({ type: 'LOGIN_SUCCESS', email: window.btoa(email), password: window.btoa(password) });
+        window.ReactNativeWebView?.postMessage(message);
+      }
+      return
+    } catch (error) {
+      throw new Error('Invalid username or password');
+      console.error("Error logging in:", error);
+    }
+    // const q = query(collection(firestore, 'user'), where('username', '==', username));
+    // const querySnapshot = await getDocs(q);
+    // console.log(querySnapshot)
+
+    // if (!querySnapshot.empty) {
+    //   const userDoc = querySnapshot.docs[0];
+    //   const userData = userDoc.data();
+    //   console.log(userData)
+
+    //   if (await bcrypt.compare(password, userData.password)) {
+    //     setCurrentUser(userData);
+    //     setRole(userData.role);
+    //     return;
+    //   }
+    // } else {
+    //   throw new Error('Invalid username or password');
+    // }
+
+  };
+
+  const signup = async (uid, data) => {
+    try {
+      // const email = `${username}@dicendelight.com`; // Buat email dari username
+      // const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // const user = userCredential.user;
+
+      // console.log(data)
+
+      // Simpan data pengguna di Firestore
+      await setDoc(doc(firestore, "user", uid), data);
+      Swal.fire({
+        title: "Success!",
+        text: "Berhasil menambahkan data baru",
+        icon: "success"
+      });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Gagal mnenambahkan data baru",
+        icon: "error"
+      });
+    }
+  };
+
+  useEffect(() => {
+    // console.log("masuk")
+    axios.get("http://localhost:5000/get-data/user")
+      .then(response => {
+        console.log(response)
+      })
+      .catch(error => console.error("Error fetching users:", error));
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // updateProfile(user, { displayName: "Owner" })
+      console.log(user)
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        logout()
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return; // Ensure currentUser is defined
+    const q = query(collection(firestore, 'user'), where('__name__', '==', currentUser.uid));
+
+    const unsubscribeUser = onSnapshot(q, async (snapshot) => {
+      var tmpData = {};
+      snapshot.forEach((doc) => {
+        tmpData = { ...doc.data(), id: doc.id };
+      });
+      console.log(tmpData)
+      setcurrentUser(tmpData);
+    });
+
+    return () => {
+      unsubscribeUser();
+    };
+  }, [currentUser?.uid, firestore, setcurrentUser]); // Add dependencies
+
+  const logout = async () => {
+    try {
+      signOut(auth);
+      setCurrentUser();
+      setcurrentUser({})
+      const message = JSON.stringify({ type: 'LOGOUT_SUCCESS' });
+      window.ReactNativeWebView?.postMessage(message);
+    } catch (err) {
+      console.log(err)
+    }
+  };
+
+  const value = {
+    currentUser,
+    currentUser,
+    role,
+    login,
+    signup,
+    logout,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
