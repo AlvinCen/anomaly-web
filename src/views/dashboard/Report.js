@@ -2028,6 +2028,7 @@ const Report = () => {
           collection={"cashier"} // Ambil data dari koleksi "cashiers"
           filter={{}} // Bisa diberikan filter
           sort={{ createdAt: -1 }} // Sortir dari terbaru
+          exportExcel={true}
           cashierData={detailCashier}
           filterDate={true}
           refresh={refresh}

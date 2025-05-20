@@ -102,7 +102,7 @@ const Table = () => {
     const [isDiscount, setIsDiscount] = useState(false);
 
     const [service, setService] = useState(10);
-    const [tax, setTax] = useState(11);
+    const [tax, setTax] = useState(10);
     const [discount, setDiscount] = useState("0");
     const [typeDiscount, setTypeDiscount] = useState(true);
 
@@ -1091,8 +1091,6 @@ const Table = () => {
 
     function hitungHarga(table, waktuAwal, waktuAkhir = moment().format(), harga = 0, calculateDuration = false) {
         let isHourPromo = false;
-        console.log(table?.item?.filter((data) => data?.tipe === "durasi" && data?.duration === "00:00")
-        )
         const tableGame = table?.item?.filter((data) => data?.tipe === "durasi" && data?.duration === "00:00")
         if (tableGame?.length > 0) {
             tableGame.map((game) => {
@@ -2583,9 +2581,9 @@ const Table = () => {
     //     };
     // }, [initClient]);
 
-    useEffect(() => {
-        console.log(item)
-    }, [item])
+    // useEffect(() => {
+    //     console.log(item)
+    // }, [item])
 
     const fetchTables = async () => {
         try {
@@ -2636,7 +2634,7 @@ const Table = () => {
             let tmpOptions = response.data.map(doc => ({
                 id: doc._id,
                 value: doc.name,
-                label: doc.name,
+                label: doc.label,
                 harga: doc.harga,
                 item: doc.item,
                 group: "promo"
@@ -3177,7 +3175,7 @@ const Table = () => {
                                                     setIsTax(e.target.checked)
                                                 }}
                                             />
-                                            <b>PB {<input type='number' min={0} max={20} value={edit?.tax < 1 && edit?.tax > 0 ? edit?.tax * 100 : edit?.tax} onChange={(e) =>
+                                            <b>PB1 {<input type='number' min={0} max={20} value={edit?.tax < 1 && edit?.tax > 0 ? edit?.tax * 100 : edit?.tax} onChange={(e) =>
                                                 setEdit({ ...edit, tax: e.target.value })} />} %</b></CTableDataCell>
                                         <CTableDataCell>{isTax ? formatNumber(hitungOrder(edit) * (edit?.tax < 1 && edit?.tax > 0 ? edit?.tax : edit?.tax / 100)) : 0}</CTableDataCell>
                                     </CTableRow>
@@ -3361,7 +3359,7 @@ const Table = () => {
                                         </CTableRow>
                                         <CTableRow>
                                             <CTableDataCell colSpan={3} style={{ textAlign: "right" }} >
-                                                <b>PB ({edit?.tax * 100}%)</b></CTableDataCell>
+                                                <b>PB1 ({edit?.tax * 100}%)</b></CTableDataCell>
                                             <CTableDataCell>{formatNumber(Math.ceil(totalHarga * (edit?.tax)))}</CTableDataCell>
                                         </CTableRow>
                                         <CTableRow>
@@ -4265,7 +4263,7 @@ const Table = () => {
                                                 <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
                                                     checked={isTax}
                                                     onChange={(e) => setIsTax(e.target.checked)} />
-                                                <b>PB {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
+                                                <b>PB1 {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
                                             <CTableDataCell>{isTax ? formatNumber(Math.ceil(orderTotal * (tax / 100))) : 0}</CTableDataCell>
                                         </CTableRow>
                                         {/* <CTableRow>
@@ -4949,7 +4947,7 @@ const Table = () => {
                                                 setIsTax(e.target.checked)
                                             }}
                                         />
-                                        <b>PB {<input type='number' min={0} max={20} value={detail?.tax < 1 && detail?.tax > 0 ? detail?.tax * 100 : detail?.tax} onChange={(e) =>
+                                        <b>PB1 {<input type='number' min={0} max={20} value={detail?.tax < 1 && detail?.tax > 0 ? detail?.tax * 100 : detail?.tax} onChange={(e) =>
                                             setDetail({ ...detail, tax: e.target.value })} />} %</b></CTableDataCell>
                                     <CTableDataCell>{isTax ? formatNumber(hitungOrder(detail) * (detail?.tax < 1 && detail?.tax > 0 ? detail?.tax : detail?.tax / 100)) : 0}</CTableDataCell>
                                 </CTableRow>

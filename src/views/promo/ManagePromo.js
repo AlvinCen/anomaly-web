@@ -30,6 +30,7 @@ const ManagePromo = () => {
     const [hours, setHours] = useState(0);
     const [minutes, setMinutes] = useState(0);
     const [data, setData] = useState([])
+    const [label, setLabel] = useState("")
     const [item, setItem] = useState([])
     const [menu, setMenu] = useState([])
     const [table, setTable] = useState([])
@@ -230,6 +231,7 @@ const ManagePromo = () => {
             setNama(edit?.name)
             setHarga(edit?.harga)
             setItem(edit?.item)
+            setLabel(edit?.label)
         }
     }, [action])
 
@@ -275,11 +277,12 @@ const ManagePromo = () => {
             if (!item?.tipe) item.addOns = []
             return item
         })
-        console.log(tmpItem)
+
         const data = {
             name: nama,
             harga: harga,
             item: tmpItem,
+            label,
             createdAt: moment().format().toString(),
             status: "LISTED"
         }
@@ -323,6 +326,7 @@ const ManagePromo = () => {
             harga: harga,
             name: nama,
             item: tmpItem,
+            label,
             updatedAt: moment().format().toString(),
             status: "LISTED"
         }
@@ -429,6 +433,17 @@ const ManagePromo = () => {
                                 </CCol>
                             </CRow>
                             <CRow className="mb-3">
+                                <CFormLabel className="col-sm-3 col-form-label">Label Struk</CFormLabel>
+                                <CCol sm={9}>
+                                    <CFormInput type="text"
+                                        placeholder="Input Label Struk (Max 13 Char)"
+                                        maxLength={13}
+                                        onChange={(e) => setLabel(e.target.value.replace(/,/g, ""))}
+                                        value={label}
+                                    />
+                                </CCol>
+                            </CRow>
+                            <CRow className="mb-3">
                                 <CFormLabel className="col-sm-3 col-form-label">Harga</CFormLabel>
                                 <CCol sm={9}>
                                     <CFormInput type="text"
@@ -526,6 +541,17 @@ const ManagePromo = () => {
                                 <CFormLabel className="col-sm-3 col-form-label">Nama Promo</CFormLabel>
                                 <CCol sm={9}>
                                     <CFormInput type="text" placeholder="Input Nama Promo" onChange={(e) => setNama(e.target.value)} defaultValue={nama} />
+                                </CCol>
+                            </CRow>
+                            <CRow className="mb-3">
+                                <CFormLabel className="col-sm-3 col-form-label">Label Struk</CFormLabel>
+                                <CCol sm={9}>
+                                    <CFormInput type="text"
+                                        placeholder="Input Label Struk (Max 13 Char)"
+                                        maxLength={13}
+                                        onChange={(e) => setLabel(e.target.value.replace(/,/g, ""))}
+                                        value={label}
+                                    />
                                 </CCol>
                             </CRow>
                             <CRow className="mb-3">
@@ -630,6 +656,17 @@ const ManagePromo = () => {
                                 </CCol>
                             </CRow>
                             <CRow className="mb-3">
+                                <CFormLabel className="col-sm-2 col-form-label">Label Struk</CFormLabel>
+                                <CCol sm={10}>
+                                    <CFormInput type="text"
+                                        placeholder="Input Label Struk (Max 13 Char)"
+                                        maxLength={13}
+                                        onChange={(e) => setLabel(e.target.value.replace(/,/g, ""))}
+                                        value={label}
+                                    />
+                                </CCol>
+                            </CRow>
+                            <CRow className="mb-3">
                                 <CFormLabel className="col-sm-2 col-form-label">Harga</CFormLabel>
                                 <CCol sm={10}>
                                     <CFormInput type="text"
@@ -686,7 +723,7 @@ const ManagePromo = () => {
                 scrollable
                 alignment='center'
                 visible={visible}
-                onClose={() => { setTotalMenu(0); setNama(""); setHarga(0); setMeja([]); setHours(0); setMinutes(0); setItem([]); setVisible(false); setAction(null); }}
+                onClose={() => { setTotalMenu(0); setLabel(""); setNama(""); setHarga(0); setMeja([]); setHours(0); setMinutes(0); setItem([]); setVisible(false); setAction(null); }}
                 aria-labelledby="actionModal"
             >
                 {renderModal()}

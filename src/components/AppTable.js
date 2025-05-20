@@ -33,6 +33,7 @@ const AppTable = (
   { title,
     column,
     // query,
+    exportExcel,
     collectionRef,
     refData = [],
     collection,
@@ -84,6 +85,29 @@ const AppTable = (
   const [sortedData, setSortedData] = useState(isSort ? sortByExpiredDate(data) : null);
   const [isAscending, setIsAscending] = useState(true);
   const [nearestExpired, setNearestExpired] = useState(null);
+
+  const handleExport = () => {
+    if (startDate && endDate) {
+      const sortedData = filteredData.map(session => {
+        return {
+          ...session,
+          transaction: [...session.transaction].sort((a, b) => {
+            // Urutkan berdasarkan paymentMethod terlebih dahulu
+            if (a.paymentMethod < b.paymentMethod) return -1;
+            if (a.paymentMethod > b.paymentMethod) return 1;
+
+            // Jika paymentMethod sama, urutkan berdasarkan transactionId
+            if (a.transactionId < b.transactionId) return -1;
+            if (a.transactionId > b.transactionId) return 1;
+
+            return 0;
+          })
+        };
+      });
+      exportToExcel(sortedData, `Laporan-Anomaly-${moment(startDate).format("DD-MM-YYYY")}_${moment(endDate).format("DD-MM-YYYY")}.xlsx`
+        , startDate, endDate)
+    }
+  }
 
 
   const handleFilter = (startDate, endDate) => {
@@ -533,6 +557,9 @@ const AppTable = (
               </CInputGroup>
             </CCol>}
           </CRow>
+          <CRow style={{ width: "auto", paddingRight: "0.75rem" }} className='justify-content-end'>
+            {exportExcel && <CButton style={{ width: "100px" }} color="primary" className='mb-3' onClick={handleExport}><CIcon icon={cilShare} /> Export</CButton>}
+          </CRow>
 
           <CTable align="middle" className="mb-3 border" hover responsive striped>
             <CTableHead className="text-nowrap">
@@ -548,8 +575,8 @@ const AppTable = (
             <CTableBody>
               {currentData.map((data, index1) => {
                 var totalStok = title === "Management Storage" && data?.stok?.reduce((sum, s) => sum + s.qty ? s.qty : s.berat, 0);
-                if(data?.tipe ==="berat"){
-                  totalStok = totalStok >= 1000? totalStok/1000 + " kg" : totalStok + " gram"
+                if (data?.tipe === "berat") {
+                  totalStok = totalStok >= 1000 ? totalStok / 1000 + " kg" : totalStok + " gram"
                 }
 
                 return <CTableRow key={index1}>
