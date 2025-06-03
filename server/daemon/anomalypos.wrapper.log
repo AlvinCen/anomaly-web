@@ -1,2 +1,4 @@
-2025-05-19 14:20:33 - Starting C:\Program Files\nodejs\node.exe  --harmony --max_old_space_size=4096 F:\anomaly-web\server\node_modules\node-windows\lib\wrapper.js --file F:\anomaly-web\server\server.js --scriptoptions= --log "Anomaly POS wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
-2025-05-19 14:20:33 - Started 5844
+2025-06-02 16:50:26 - Starting C:\Program Files\nodejs\node.exe  --harmony --max_old_space_size=4096 F:\anomaly-web\server\node_modules\node-windows\lib\wrapper.js --file F:\anomaly-web\server\server.js --scriptoptions= --log "Anomaly POS wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2025-06-02 16:50:26 - Started 7776
+2025-06-02 18:42:24 - Starting C:\Program Files\nodejs\node.exe  --harmony --max_old_space_size=4096 F:\anomaly-web\server\node_modules\node-windows\lib\wrapper.js --file F:\anomaly-web\server\server.js --scriptoptions= --log "Anomaly POS wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2025-06-02 18:42:24 - Started 7496

@@ -24,6 +24,8 @@ import {
   cilStorage,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
+import { faNewspaper, faPercent } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 const _nav = [
   {
@@ -75,6 +77,23 @@ const _nav = [
   //   to: '/manage-table',
   //   icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
   // },
+  // {
+  //   component: CNavGroup, // 🔥 Gunakan CNavGroup untuk grup menu
+  //   name: 'Recipe',
+  //   icon: <FontAwesomeIcon icon={faNewspaper} className="nav-icon" />,
+  //   items: [
+  //     {
+  //       component: CNavItem,
+  //       name: 'Manage Recipe',
+  //       to: '/recipe/manage',
+  //     },
+  //     // {
+  //     //   component: CNavItem,
+  //     //   name: 'Storage Log',
+  //     //   to: '/storage/log',
+  //     // }
+  //   ],
+  // },
   {
     component: CNavGroup, // 🔥 Gunakan CNavGroup untuk grup menu
     name: 'Storage',
@@ -84,6 +103,11 @@ const _nav = [
         component: CNavItem,
         name: 'Manage Storage',
         to: '/storage/manage',
+      },
+      {
+        component: CNavItem,
+        name: 'Storage Report',
+        to: '/storage/report',
       },
       {
         component: CNavItem,
@@ -102,7 +126,7 @@ const _nav = [
     component: CNavItem,
     name: 'Promo',
     to: '/manage-promo',
-    icon: <CIcon icon={cilCash} customClassName="nav-icon" />,
+    icon: <FontAwesomeIcon icon={faPercent} className="nav-icon" />
   },
   {
     component: CNavGroup, // 🔥 Gunakan CNavGroup untuk grup menu

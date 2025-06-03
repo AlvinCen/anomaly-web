@@ -138,9 +138,9 @@ const ManageMenu = () => {
     useEffect(() => {
         if (action === "edit") {
             var tmpItem = []
-            edit?.priceList.map((data) => {
-                tmpItem.push({ label: data?.name, labelStruk: data.label ? data.label : "", value: data.id, harga: data.harga, tipe: data.tipe, duration: data.duration })
-            })
+            // edit?.priceList.map((data) => {
+            //     tmpItem.push({ label: data?.name, labelStruk: data.label ? data.label : "", value: data.id, harga: data.harga, tipe: data.tipe, duration: data.duration })
+            // })
             console.log(tmpItem)
             setNama(edit?.name)
             setItem(tmpItem)
@@ -169,7 +169,7 @@ const ManageMenu = () => {
             timer: "",
             createdAt: moment().format().toString(),
             harga: 0,
-            priceList: changedItem,
+            // priceList: changedItem,
             start: "",
             end: "",
             id: docId,
@@ -205,7 +205,7 @@ const ManageMenu = () => {
         const changedItem = item.map(({ labelStruk, label, ...rest }) => ({ ...rest, name: label, label: labelStruk }))
 
         var dataForm = {
-            priceList: changedItem,
+            // priceList: changedItem,
             name: nama
         }
         try {
@@ -552,7 +552,7 @@ const ManageMenu = () => {
                 column={[
                     { name: "#", key: "index" },
                     { name: "Nama", key: "name" },
-                    { name: "Price List", key: "priceList" },
+                    // { name: "Price List", key: "priceList" },
                     { name: "Status", key: "status" },
                     { name: "Action", key: "action" }
                 ]}

@@ -10,7 +10,7 @@ import ReactSelectAsyncCreatable from 'react-select/async-creatable';
 import { useAuth } from '../../AuthContext.js';
 import api from '../../axiosInstance.js';
 
-const StorageList = () => {
+const ReportStorage = () => {
     const { currentUser } = useAuth();
 
     const [loading, setLoading] = useState(false);
@@ -23,6 +23,9 @@ const StorageList = () => {
     const [harga, setHarga] = useState(0)
     const [index, setIndex] = useState(0)
     const [expired, setExpired] = useState(moment().add(7, "days").format("YYYY-MM-DD").toString())
+
+    const [startDate, setStartDate] = useState(moment().subtract(7, "days").format("YYYY-MM-DD").toString());
+    const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD").toString());
 
     const [data, setData] = useState([])
     const [nama, setNama] = useState("")
@@ -181,133 +184,16 @@ const StorageList = () => {
         fetchStorageData();
     }, [refresh]);
 
-    const tambahItem = async (e) => {
+    const tambahLaporan = async (e) => {
         e.preventDefault();
         setLoading(true)
-        console.log(nama)
-        console.log(tipe)
         const tmpData = {
-            name: nama.label,
-            tipe,
-            stok: tipe === "qty" ? Number(stok) : Number(berat),
-            comment,
-            harga,
-            expired,
-            event: "add",
-            createdAt: moment().format().toString(),
-            createdBy: currentUser.name ? currentUser.name : currentUser.username
+            startDate,
+            endDate
         }
-        if (nama?._id) tmpData.storageId = nama?._id
+        console.log(tmpData)
         try {
-            if (nama?._id) {
-                var matchExpired = false
-                var storageData = data.find((s) => s._id === nama?._id)
-                var updatedStok = storageData?.stok.map(s => {
-                    if (s.expired === expired) {
-                        matchExpired = true
-                        if (Number(s.harga) === Number(harga))
-                            if (tipe === "qty")
-                                return { ...s, qty: Number(s.qty) + Number(stok), costPerItem: Number(harga) / Number(stok) }; // update qty
-                            else if (tipe === "berat")
-                                return { ...s, berat: Number(s.berat) + Number(berat), costPerItem: Number(harga) / Number(berat) }; // update qty
-                    } else {
-                        return { ...s, costPerItem: berat !== 0 && berat !== undefined ? Number(harga) / Number(berat) : Number(harga) / Number(stok) }; // tetap
-                    }
-                });
-
-                const updateQuery = {};
-
-                if (matchExpired) {
-                    updateQuery.$set = {
-                        stok: updatedStok,
-                    };
-                } else {
-                    updateQuery.$push = {
-                        stok: tipe === "qty"
-                            ? {
-                                expired,
-                                harga,
-                                qty: Number(stok),
-                                costPerItem: Number(harga) / Number(stok),
-                            }
-                            : {
-                                expired,
-                                harga,
-                                berat: Number(berat),
-                                costPerItem: Number(harga) / Number(berat),
-                            }
-                    };
-                }
-
-                // Tambahkan updatedAt di $set
-                updateQuery.$set = {
-                    ...(updateQuery.$set || {}),
-                    updatedAt: moment().format(),
-                };
-
-                const res = await api.put("/data/update", {
-                    collection: "storage",
-                    filter: { _id: nama?._id },
-                    update: updateQuery
-                });
-
-                await api.post("/data/add", {
-                    collection: "storageLog",
-                    data: {
-                        ...tmpData,
-                        storageId: nama?._id
-                    }
-                });
-            } else {
-                if (tipe === "qty") {
-                    const response = await api.post("/data/add", {
-                        collection: "storage",
-                        data: {
-                            name: nama?.value,
-                            stok: [{
-                                expired,
-                                harga,
-                                qty: Number(stok),
-                                costPerItem: Number(harga) / Number(stok)
-                            }],
-                            tipe,
-                            createdAt: moment().format().toString(),
-                        }
-                    });
-                    await api.post("/data/add", {
-                        collection: "storageLog",
-                        data: {
-                            ...tmpData,
-                            storageId: response.data.newData._id
-                        }
-                    });
-
-                } else {
-                    const response = await api.post("/data/add", {
-                        collection: "storage",
-                        data: {
-                            name: nama?.value,
-                            stok: [{
-                                expired,
-                                harga,
-                                berat: Number(berat),
-                                costPerItem: Number(harga) / Number(berat)
-                            }],
-                            tipe,
-                            createdAt: moment().format().toString(),
-                        }
-                    });
-                    await api.post("/data/add", {
-                        collection: "storageLog",
-                        data: {
-                            ...tmpData,
-                            storageId: response.data.newData._id
-                        }
-                    });
-                }
-
-            }
-
+            await api.get("/storageReport", { params: tmpData });
             setRefresh(!refresh)
 
             Swal.fire({
@@ -330,45 +216,27 @@ const StorageList = () => {
         e.preventDefault();
         setLoading(true)
 
-        var data = {
+        const data = {
             storageId: detail?._id,
             name: detail?.name,
-            tipe: detail?.tipe,
-            stok: detail?.tipe === "qty" ? Number(stok) : Number(berat),
+            stok: Number(stok),
             comment: comment,
             expired: expired,
+            event: Number(stok) === 0 ? "delete" : "update",
             createdAt: moment().format().toString(),
-            event: "update",
             createdBy: currentUser.name ? currentUser.name : currentUser.username
         }
         try {
             if (detail?._id) {
                 var updatedStok = detail?.stok.map(s => {
                     if (s.expired === expired) {
-                        // return { ...s, qty: Number(stok) }; // update qty
-                        data.harga = Number(s.harga)
-                        data.costPerItem = Number(s.costPerItem)
-                        if (detail?.tipe === "qty") {
-                            data.beforeStok = Number(s.qty)
-                            return { ...s, qty: Number(stok) }; // update qty}}
-                        }
-                        else if (detail?.tipe === "berat") {
-                            data.beforeStok = Number(s.berat)
-                            return { ...s, berat: Number(berat) }; // update qty}
-                        }
-                    } else return s; // tetap
+                        return { ...s, qty: Number(stok) }; // update qty
+                    }
+                    return s; // tetap
                 });
 
                 // Hapus kalau qty = 0
-                if (detail?.tipe === "qty" || detail?.tipe === undefined) {
-                    updatedStok = updatedStok.filter(s => s.qty > 0);
-                }
-                else {
-                    updatedStok = updatedStok.filter(s => s.berat > 0);
-
-                }
-                // console.log(detail)
-                // console.log(data)
+                updatedStok = updatedStok.filter(s => s.qty > 0);
                 await api.put("/data/update", {
                     collection: "storage",
                     filter: { _id: detail?._id },
@@ -383,7 +251,7 @@ const StorageList = () => {
                     collection: "storageLog",
                     data: {
                         ...data,
-                        storageId: detail?._id
+                        storageId: nama?._id
                     }
                 });
             }
@@ -470,72 +338,58 @@ const StorageList = () => {
                 return (
                     <>
                         <CModalHeader>
-                            <CModalTitle id="actionModal">Tambah Item</CModalTitle>
+                            <CModalTitle id="actionModal">Tambah Laporan</CModalTitle>
                         </CModalHeader>
                         <CModalBody>
                             <CContainer>
                                 <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Nama Barang</CFormLabel>
+                                    <CFormLabel className="col-sm-2 col-form-label">Pilih Tanggal</CFormLabel>
+                                    <CCol sm="auto">
+                                        <CInputGroup>
+                                            <CFormInput
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                placeholder="Start Date"
+                                                aria-label="Start Date" />
+                                            <CInputGroupText> ~ </CInputGroupText>
+                                            <CFormInput
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                placeholder="End Date"
+                                                aria-label="End Date" />
+                                        </CInputGroup>
+
+                                    </CCol>
+                                </CRow>
+
+                            </CContainer>
+                        </CModalBody>
+                        <CModalFooter>
+                            {!loading ? <CButton color="success" onClick={tambahLaporan}>Tambah</CButton>
+                                : <CSpinner color="primary" className="float-end" variant="grow" />}
+                        </CModalFooter>
+                    </>
+                );
+            case "edit":
+                return (
+                    <>
+                        <CModalHeader>
+                            <CModalTitle id="actionModal">Update Item - {detail?.name}</CModalTitle>
+                        </CModalHeader>
+                        <CModalBody>
+                            <CContainer>
+                                <CRow className="mb-3">
+                                    <CFormLabel className="col-sm-2 col-form-label">Stok</CFormLabel>
                                     <CCol sm={10}>
-                                        <ReactSelectAsyncCreatable
-                                            defaultOptions
-                                            loadOptions={loadOption}
-                                            styles={customStyles}
-
-                                            filterOption={filterOption}
-                                            menuPortalTarget={document.body}
-                                            onChange={(newValue) => setNama(newValue)}
-                                            onCreateOption={handleCreate}
-
-                                            value={nama}
-                                            placeholder="Nama Barang" />
+                                        <CFormInput type="number" min={1} max={edit?.qty} value={stok} onChange={(e) => { setStok(e.target.value) }} />
                                     </CCol>
                                 </CRow>
                                 <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Tipe Stok</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormSelect value={tipe} onChange={(e) => setTipe(e.target.value)}>
-                                            <option value="" disabled>Pilih Tipe Stok</option>
-                                            <option value="qty">Kuantitas</option>
-                                            <option value="berat">Berat</option>
-                                        </CFormSelect>
-                                    </CCol>
-                                </CRow>
-
-                                {tipe === "qty" && <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Qty</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="number" min={1} value={stok} onChange={(e) => { setStok(e.target.value) }} />
-                                    </CCol>
-                                </CRow>}
-                                {tipe === "berat" && <CRow className="mb-3">
                                     <CFormLabel className="col-sm-2 col-form-label">Berat (gram)</CFormLabel>
                                     <CCol sm={10}>
-                                        <CFormInput type="text" value={formatNumber(berat)} onChange={(e) => { setBerat(e.target.value.replace(/,/g, "")) }} />
-                                    </CCol>
-                                </CRow>}
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Expired</CFormLabel>
-                                    <CCol sm="auto">
-                                        <CFormInput
-                                            type="date"
-                                            value={expired}
-                                            onChange={(e) => setExpired(e.target.value)}
-                                            placeholder="Expired Date"
-                                            aria-label="Expired Date" />
-                                    </CCol>
-                                </CRow>
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Harga</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="text"
-                                            placeholder="Input Harga"
-                                            onChange={(e) => {
-                                                // if (/^\d*$/.test(e.target.value)) setHarga(e.target.value)
-                                                setHarga(e.target.value.replace(/,/g, ""))
-                                            }}
-                                            value={formatNumber(harga)}
-                                        />
+                                        <CFormInput type="number" min={1} max={edit?.berat} value={berat} onChange={(e) => { setBerat(e.target.value) }} />
                                     </CCol>
                                 </CRow>
                                 <CRow className="mb-3">
@@ -551,45 +405,6 @@ const StorageList = () => {
                                 </CRow>
                             </CContainer>
                         </CModalBody>
-                        <CModalFooter>
-                            {!loading ? <CButton color="success" onClick={tambahItem}>Tambah</CButton>
-                                : <CSpinner color="primary" className="float-end" variant="grow" />}
-                        </CModalFooter>
-                    </>
-                );
-            case "edit":
-                return (
-                    <>
-                        <CModalHeader>
-                            <CModalTitle id="actionModal">Update Item - {detail?.name}</CModalTitle>
-                        </CModalHeader>
-                        <CModalBody>
-                            <CContainer>
-                                {(detail?.tipe === "qty" || detail?.tipe === undefined) && <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Stok</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="number" min={1} max={edit?.qty} value={stok} onChange={(e) => { setStok(e.target.value) }} />
-                                    </CCol>
-                                </CRow>}
-                                {detail?.tipe === "berat" && < CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Berat (gram)</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="text" value={formatNumber(berat)} onChange={(e) => { setBerat(e.target.value.replace(/,/g, "")) }} />
-                                    </CCol>
-                                </CRow>}
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Comment</CFormLabel>
-                                    <CCol>
-                                        <CFormTextarea
-                                            rows={3}
-                                            value={comment}
-                                            onChange={(e) => setComment(e.target.value)}
-                                            placeholder="Input Comment"
-                                            aria-label="Input Comment" />
-                                    </CCol>
-                                </CRow>
-                            </CContainer>
-                        </CModalBody >
                         <CModalFooter>
                             <CButton color="primary" onClick={() => { setAction("detail"); setVisible(true) }}>← Kembali</CButton>
                             <CButton color="warning" onClick={updateItem}>Update</CButton>
@@ -621,7 +436,7 @@ const StorageList = () => {
                                             <CTableDataCell>{detail?.tipe === "berat" ?
                                                 (data?.berat >= 1000 ? (data?.berat / 1000) + " kg" : data?.berat + " gr")
                                                 : data?.qty}</CTableDataCell>
-                                            <CTableDataCell>{formatNumber(data?.harga)}</CTableDataCell>
+                                            <CTableDataCell>{data?.harga}</CTableDataCell>
                                             <CTableDataCell>{moment(data?.expired).format("DD MMMM YYYY")}</CTableDataCell>
                                             <CTableDataCell>
                                                 <CButton className='me-2' size="sm" color="warning"
@@ -654,83 +469,36 @@ const StorageList = () => {
                 return (
                     <>
                         <CModalHeader>
-                            <CModalTitle id="actionModal">Tambah Item</CModalTitle>
+                            <CModalTitle id="actionModal">Tambah Laporan</CModalTitle>
                         </CModalHeader>
                         <CModalBody>
                             <CContainer>
                                 <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Nama Barang</CFormLabel>
-                                    <CCol sm={10}>
-                                        <ReactSelectAsyncCreatable
-                                            defaultOptions
-                                            loadOptions={loadOption}
-                                            styles={customStyles}
-
-                                            filterOption={filterOption}
-                                            menuPortalTarget={document.body}
-                                            onChange={(newValue) => setNama(newValue)}
-                                            onCreateOption={handleCreate}
-
-                                            value={nama}
-                                            placeholder="Nama Barang" />
-                                    </CCol>
-                                </CRow>
-                                <CFormSelect value={tipe} onChange={(e) => setTipe(e.target.value)}>
-                                    <option value="" disabled>Pilih Tipe Stok</option>
-                                    <option value="qty">Kuantitas</option>
-                                    <option value="berat">Berat</option>
-                                </CFormSelect>
-                                {tipe === "qty" && <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Qty</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="number" min={1} value={stok} onChange={(e) => { setStok(e.target.value) }} />
-                                    </CCol>
-                                </CRow>}
-                                {tipe === "berat" && <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Berat (gram)</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="number" min={1} value={berat} onChange={(e) => { setBerat(e.target.value) }} />
-                                    </CCol>
-                                </CRow>}
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Expired</CFormLabel>
+                                    <CFormLabel className="col-sm-2 col-form-label">Pilih Tanggal</CFormLabel>
                                     <CCol sm="auto">
-                                        <CFormInput
-                                            type="date"
-                                            value={expired}
-                                            onChange={(e) => setExpired(e.target.value)}
-                                            placeholder="Expired Date"
-                                            aria-label="Expired Date" />
+                                        <CInputGroup>
+                                            <CFormInput
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                placeholder="Start Date"
+                                                aria-label="Start Date" />
+                                            <CInputGroupText> ~ </CInputGroupText>
+                                            <CFormInput
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                placeholder="End Date"
+                                                aria-label="End Date" />
+                                        </CInputGroup>
+
                                     </CCol>
                                 </CRow>
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Harga</CFormLabel>
-                                    <CCol sm={10}>
-                                        <CFormInput type="text"
-                                            placeholder="Input Harga"
-                                            onChange={(e) => {
-                                                // if (/^\d*$/.test(e.target.value)) setHarga(e.target.value)
-                                                setHarga(e.target.value.replace(/,/g, ""))
-                                            }}
-                                            value={formatNumber(harga)}
-                                        />
-                                    </CCol>
-                                </CRow>
-                                <CRow className="mb-3">
-                                    <CFormLabel className="col-sm-2 col-form-label">Comment</CFormLabel>
-                                    <CCol>
-                                        <CFormTextarea
-                                            rows={3}
-                                            value={comment}
-                                            onChange={(e) => setComment(e.target.value)}
-                                            placeholder="Input Comment"
-                                            aria-label="Input Comment" />
-                                    </CCol>
-                                </CRow>
+
                             </CContainer>
                         </CModalBody>
                         <CModalFooter>
-                            {!loading ? <CButton color="success" onClick={tambahItem}>Tambah</CButton>
+                            {!loading ? <CButton color="success" onClick={tambahLaporan}>Tambah</CButton>
                                 : <CSpinner color="primary" className="float-end" variant="grow" />}
                         </CModalFooter>
                     </>
@@ -747,21 +515,21 @@ const StorageList = () => {
             }
         >
             <AppTable
-                title={"Management Storage"}
+                title={"Storage Report"}
                 column={[
                     { name: "#", key: "index" },
-                    { name: "Nama Item", key: "name" },
-                    { name: "Total Stok", key: "totalStok" },
-                    // { name: "Harga", key: "harga" },
-                    { name: "Expired", key: "expiredStok" },
+                    { name: "Tanggal", key: "createdAt" },
+                    { name: "Estimate Cost", key: "total" },
+                    { name: "Start Date", key: "startDate" },
+                    { name: "End Date", key: "endDate" },
                     { name: "Action", key: "action" }
                 ]}
                 sortDesc={true}
-                collection="storage" // Use the MongoDB endpoint
+                collection="storageReport" // Use the MongoDB endpoint
                 filter={{}} // Empty filter by default
                 sort={{ createdAt: -1 }} // Sort by newest first
                 isSort={true}
-                crudAction={[{ name: "Tambah Item", key: "add" }]}
+                crudAction={[{ name: "Tambah Laporan", key: "create" }]}
                 listStatus={[{ name: "LISTED", color: "success" }, { name: "ARCHIVE", color: "secondary" }]}
                 refresh={refresh}
                 setAction={setAction}
@@ -793,4 +561,4 @@ const StorageList = () => {
     );
 };
 
-export default StorageList;
+export default ReportStorage;

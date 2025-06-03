@@ -34,6 +34,42 @@ mongoose.connect("mongodb://localhost:27017/anomaly")
         console.log("✅ MongoDB Connected")
 
         await startWatcher();
+
+        // const storageLog = mongoose.connection.collection("storageLog");
+
+        // const docsToUpdate = await storageLog.find({
+        //     createdAt: { $type: "string" } // cari yang masih string
+        // }).toArray();
+
+        // console.log(`🔍 Ditemukan ${docsToUpdate.length} dokumen dengan createdAt bertipe string.`);
+
+        // for (const doc of docsToUpdate) {
+        //     try {
+        //         const parsedDate = new Date(doc.createdAt);
+        //         if (isNaN(parsedDate.getTime())) {
+        //             console.warn(`❌ Gagal parse tanggal untuk _id: ${doc._id}`);
+        //             continue;
+        //         }
+
+        //         await storageLog.updateOne(
+        //             { _id: doc._id },
+        //             { $set: { createdAt: parsedDate } }
+        //         );
+
+        //         console.log(`✅ Updated _id: ${doc._id} → ${parsedDate.toISOString()}`);
+        //     } catch (err) {
+        //         console.error(`❌ Error updating _id: ${doc._id}`, err.message);
+        //     }
+        // }
+
+        // console.log("✅ Migrasi selesai.");
+
+        // ⬇️ Tambahkan ini
+        // const syncProductReport = require("./syncProductReport.js");
+        // await syncProductReport(); // Jalankan sinkronisasi productReport
+        // const syncStorage = require("./syncProductReport.js");
+        // await syncStorage(); // Jalankan sinkronisasi productReport
+
     })
     .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
@@ -145,6 +181,7 @@ app.post("/api/auth/logout", (req, res) => {
     res.json({ message: "Logout berhasil" });
 });
 
+
 app.post("/api/change-password", async (req, res) => {
     try {
         const { id, currentPassword, newPassword } = req.body;
@@ -186,6 +223,48 @@ app.get("/api/protected/dashboard", authMiddleware, async (req, res) => {
         const user = await User.findById(req.user.userId).select("-password");
         // console.log(user)
         res.json({ user });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+app.get("/api/storageReport", authMiddleware, async (req, res) => {
+
+    try {
+        const { startDate, endDate } = req.query;
+        const StorageLog = getModel("storageLog");
+        const StorageReport = getModel("storageReport");
+        var total = 0;
+
+        const storageLogs = await StorageLog.find(
+            {
+                createdAt: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                },
+                event: "update"
+            }
+        );
+
+        var data = {
+            createdAt: moment().tz("Asia/Jakarta").toDate(),
+            startDate,
+            endDate,
+            item: []
+        }
+
+        for (const str of storageLogs) {
+            if (str.beforeStok > str.stok) {
+                var usedStok = Number(str.beforeStok) - Number(str.stok)
+                total += usedStok * str?.costPerItem
+                data.item.push({ tipe: str?.tipe, usedStok, cost: usedStok * str?.costPerItem, costPerItem: str.costPerItem })
+            }
+        }
+        data.total = Math.ceil(total)
+        await StorageReport.create(data);
+
+        console.log("✅ Pembuat Laporan Storage selesai.");
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

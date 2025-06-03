@@ -1,4 +1,4 @@
-import { cilCash, cilMediaStop, cilPen, cilPencil, cilPrint } from '@coreui/icons';
+import { cilCash, cilCreditCard, cilMediaStop, cilPen, cilPencil, cilPrint } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import { CBadge, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCol, CCollapse, CContainer, CForm, CFormCheck, CFormInput, CFormLabel, CFormSelect, CFormSwitch, CHeader, CInputGroup, CInputGroupText, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CPagination, CPaginationItem, CProgress, CRow, CSpinner, CTable, CTableBody, CTableDataCell, CTableHead, CTableHeaderCell, CTableRow } from '@coreui/react'
 import moment from 'moment';
@@ -19,6 +19,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ReactSelectCreatable from 'react-select/creatable';
 import qrisIcon from '../../assets/images/qris.png'
 import api from '../../axiosInstance';
+import { faMotorcycle } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import grabFood from "../../assets/images/grabfood-logo.png";
+import goFood from "../../assets/images/gofood-logo.png";
 
 
 const Table = () => {
@@ -37,6 +41,7 @@ const Table = () => {
     const { currentUser } = useAuth();
 
     const [inputValue, setInputValue] = useState("");
+    const [inputFilter, setInputFilter] = useState("");
 
     const [time, setTime] = useState(0);
     const [isLoading,] = useState(false)
@@ -80,6 +85,7 @@ const Table = () => {
     const [order, setOrder] = useState([])
     const [promo, setPromo] = useState("")
     const [booking, setBooking] = useState([])
+    const [priceList, setPriceList] = useState([])
     const [detail, setDetail] = useState([])
     const [nama, setNama] = useState("")
     const [durasi, setDurasi] = useState("")
@@ -103,7 +109,7 @@ const Table = () => {
 
     const [service, setService] = useState(10);
     const [tax, setTax] = useState(10);
-    const [discount, setDiscount] = useState("0");
+    const [discount, setDiscount] = useState("10");
     const [typeDiscount, setTypeDiscount] = useState(true);
 
     const [intervals, setIntervals] = useState({});
@@ -211,7 +217,7 @@ const Table = () => {
             } else return total
 
         }, 0);
-        console.log(boardGame)
+        // console.log(boardGame)
         // if (table?.orderTotal) {
         // console.log(table)
         var orderTotal = tmpCafe?.item.reduce((total, item) => {
@@ -529,13 +535,12 @@ const Table = () => {
 
 
     const handlePrintClick = async (data, kembali) => {
-        console.log(data, kembali)
         if (window?.electron) {
             const collection = "tableHistory";
             const result = await window?.electron.printReceipt({
                 data,
                 // cafe,
-                paymentMethod,
+                paymentMethod: (data?.tableName !== "grabfood" && data?.tableName !== "gofood") ? paymentMethod : "qris",
                 pay: inputBayar,
                 changes: kembali
             });
@@ -671,20 +676,19 @@ const Table = () => {
 
     const loadOption = (inputValue, callback) => {
         const options = [
-            { label: "Reguler", options: detail?.priceList },
+            { label: "Reguler", options: priceList },
             { label: "Promo", options: promoOptions },
         ]
         // // console.log(options)
         callback(options)
     }
-
     const filterOption = (option, inputValue) => {
-        // const options = [{ label: "Merchandise", options: merchOptions }]
-        // // console.log(options)
-        // callback(options)
-        return (option.data.stok > 0 && option.data.group === "merch") || option.data.group !== "merch"
-    }
+        const label = option.label?.toLowerCase() || '';
+        const value = option.value?.toLowerCase() || '';
+        const input = inputValue.toLowerCase();
 
+        return label.includes(input) || value.includes(input);
+    };
     const formatGroupLabel = (data) => {
         // // console.log(data)
         var tmpFilter = data.options.filter((val) => { return val.label.toLowerCase().includes(filterValue) })
@@ -1243,7 +1247,7 @@ const Table = () => {
             // else orderItem.push({ ...item, name: name ? name : item?.name, qty: item?.qty ? item?.qty : 1 })
             var name = item?.label.replace(/\s*\(.*?\)\s*/g, "").trim()
             const { label, value, ...tmpItem } = item;
-            orderItem.push({ ...item, name: name ? name : item?.name, qty: tmpItem?.qty ? tmpItem?.qty : 1 })
+            orderItem.push({ ...item, label: item?.labelStruk, name: name ? name : item?.name, qty: tmpItem?.qty ? tmpItem?.qty : 1 })
         }
         if (tmpCafe?.item.length > 0) {
             var cafe = tmpCafe?.item.map((item) => { return { ...item, createdAt: moment().format() } })
@@ -1286,7 +1290,7 @@ const Table = () => {
                     tax: isTax ? tax / 100 : 0,
                     // service: isService ? service / 100 : 0,
                     typeDiscount,
-                    discount: isDiscount ? Number(discount) : 0,
+                    discount: isDiscount ? Number(10) : 0,
                     orderTotal: Math.ceil((isDiscount ? (typeDiscount ? total * (1 - (discount / 100)) : total - discount) : total) * ((isTax ? tax / 100 : 0) + (isService ? service / 100 : 0))),
                     // item: usePromo && promo ? [{ qty: 1, harga: promo.harga, name: promo.value, sub: [...promo.menu], isPromo: true }] : [],
                     item: orderItem,
@@ -1332,7 +1336,7 @@ const Table = () => {
                     setData((prevData) =>
                         prevData.map((item) => (item.id === tmpMeja ? { ...item, ...dataForm } : item))
                     );
-                    navigate("/table", { state: undefined, replace: true });
+                    navigate("", { state: undefined, replace: true });
                 }
             } else {
                 // var tmpItem = client?.status !== "PAYMENT" && client?.subscription !== undefined && moment(client?.subscription?.expired).isSameOrAfter(moment().startOf("day")) && item.length > 0 ?
@@ -1349,8 +1353,9 @@ const Table = () => {
                     order: "open",
                     tax: isTax ? tax / 100 : 0,
                     // service: isService ? service / 100 : 0,
+                    start: moment().format(),
                     typeDiscount,
-                    discount: isDiscount ? Number(discount) : 0,
+                    discount: isDiscount ? Number(10) : 0,
                     orderTotal: Math.ceil((isDiscount ? (typeDiscount ? total * (1 - discount / 100) : total - discount) : total) * ((isTax ? tax / 100 : 0) + (isService ? service / 100 : 0))),
                     item: orderItem,
                     createdAt: moment().format(),
@@ -1392,7 +1397,7 @@ const Table = () => {
                     setData((prevData) =>
                         prevData.map((item) => (item.id === tmpMeja ? { ...item, ...dataForm } : item))
                     );
-                    navigate("/table", { state: undefined, replace: true });
+                    navigate("", { state: undefined, replace: true });
                 }
             }
         } catch (error) {
@@ -1539,7 +1544,7 @@ const Table = () => {
                     harga: table?.harga,
                     table: table?.id,
                     pauseTimes: table?.pauseTimes || [],
-                    end: !isPlay ? "" : table.end,
+                    end: table?.start !== "" ? table.end : "",
                     status: "PAYMENT"
                 }
             });
@@ -1580,7 +1585,6 @@ const Table = () => {
 
     const deleteTimer = async () => {
         setLoading(true);
-        (true);
         try {
             await api.put("/data/update", {
                 collection: "table",
@@ -1608,7 +1612,7 @@ const Table = () => {
             const newDate = tableControl === "durasi" ? tmpDate.add(hours, "hours").add(minutes, "minutes").format().toString() :
                 (durasi > 0 ? moment(waktu + ":" + moment(detail?.start).seconds(), "HH:mm:ss").format() : moment(detail?.start).set("hour", jam).set("minute", menit).format())
             console.log(newDate)
-                try {
+            try {
                 await api.put("/data/update", {
                     collection: "table",
                     filter: { _id: detail?._id },
@@ -1798,25 +1802,32 @@ const Table = () => {
         }
         setVisible(false)
         setLoading(false)
-            (false)
     }
 
     const updateClient = async () => {
         setLoading(true)
-            (true)
         setEditHarga(false)
         // console.log(detail)
         try {
-            const data = { client: value }
+            const data = { name: value, nomor: "" }
+            console.log(detail)
             await api.put("/data/update", {
                 collection: "table",
-                filter: { _id: detail?.id },
-                update: data
+                filter: { _id: detail?._id },
+                update: {
+                    $set: {
+                        client: data
+                    }
+                }
             });
             await api.put("/data/update", {
                 collection: "tableHistory",
                 filter: { _id: detail?.orderId },
-                update: data
+                update: {
+                    $set: {
+                        client: data
+                    }
+                }
             });
 
             Swal.fire({
@@ -1832,10 +1843,10 @@ const Table = () => {
                 icon: "error"
             });
         }
+        setRefresh(!refresh)
         setEditNama(false)
         setModal(false)
         setLoading(false)
-            (false)
     }
 
     const updateOrder = async (e) => {
@@ -2615,13 +2626,31 @@ const Table = () => {
             response.data.forEach((data) => {
                 tmpData.push({ label: `${data.name} (${data.nomor})`, status: data?.status, value: data._id, nomor: data.nomor, id: data._id, subscription: data.subscription })
             })
-            console.log(tmpData)
             setDataClient(tmpData);
         } catch (error) {
             console.error('Error fetching menu reports:', error);
             // Swal.fire('Error', 'Gagal memuat laporan menu', 'error');
         }
     };
+    const fetchPriceOption = async () => {
+        try {
+            const response = await api.post('/data', {
+                collection: "tablePrice",
+                filter: {},
+                sort: { label: 1 }
+            })
+            var tmpData = []
+            response.data.forEach((data) => {
+                tmpData.push({ label: `${data.name} (${formatNumber(data.harga)})`, labelStruk: data?.label ? data?.label : "", value: data._id, harga: data.harga, tipe: data.tipe, duration: data.duration, id: data._id, category: "board game" })
+            })
+            console.log(tmpData)
+            setPriceList(tmpData);
+        } catch (error) {
+            console.error('Error fetching menu reports:', error);
+            // Swal.fire('Error', 'Gagal memuat laporan menu', 'error');
+        }
+    };
+
 
     const fetchPromo = async () => {
         try {
@@ -2675,6 +2704,7 @@ const Table = () => {
         fetchMerchandise();
         fetchPromo();
         fetchMember();
+        fetchPriceOption();
     }, [refresh]);
 
     // useEffect(() => {
@@ -3011,7 +3041,7 @@ const Table = () => {
                                                             </CTableDataCell>
                                                             <CTableDataCell><CFormInput type="text" value={formatNumber(item?.harga)} onChange={(e) => {
                                                                 var tmpOrder = { ...edit }
-                                                                tmpOrder.item[idx] = { ...tmpOrder.item[idx], harga: e.target.value };
+                                                                tmpOrder.item[idx] = { ...tmpOrder.item[idx], harga: e.target.value.replace(/,/g, "") };
                                                                 setEdit(tmpOrder)
                                                             }} /></CTableDataCell>
                                                             <CTableDataCell><CFormInput type="text" value={formatNumber(Number(item?.harga) * (item?.qty ? Number(item?.qty) : 1))} readOnly plainText /></CTableDataCell>
@@ -4191,7 +4221,7 @@ const Table = () => {
                                         }
                                         {(typeof item === "object" && Object?.keys(item).length === 0) ? <CTableRow>
                                             <CTableDataCell colSpan={5} ><CButton color='success' onClick={() => {
-                                                setItem({ qty: 1, harga: "", name: "" })
+                                                setItem({ qty: 1, harga: "", name: "", category: "board game" })
                                             }}>+</CButton></CTableDataCell>
                                         </CTableRow> :
                                             (item?.name !== "MEMBER PASS" && Object?.keys(item).length > 0) ?
@@ -4210,6 +4240,8 @@ const Table = () => {
                                                         <ReactSelectAsync
                                                             defaultOptions
                                                             loadOptions={loadOption}
+                                                            filterOption={filterOption}
+                                                            onInputChange={(value) => setInputFilter(value)} // Track input value                                  
                                                             styles={customStyles}
                                                             placeholder="Pilih Item"
                                                             value={item}
@@ -4251,7 +4283,7 @@ const Table = () => {
                                                 <CInputGroup>
                                                     {!typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         Rp.</span>}
-                                                    <CFormInput type='text' value={formatNumber(discount)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
+                                                    <CFormInput type='text' value={formatNumber(10)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
                                                     {typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         %</span>}
                                                 </CInputGroup>
@@ -4488,7 +4520,7 @@ const Table = () => {
                 scrollable
                 alignment='center'
                 visible={modal}
-                onClose={() => { setTmpAction(""); setDetail([]); setTypeDiscount(true); setIsDiscount(false); setTmpCafe({ item: [] }); setUseDurasi(false); setItem({}); setEdit({}); setClient(undefined); setInputBayar(""); setHours(0); setDurasi(""); setUsePromo(false); setValue(""); setCafe([]); setEditNama(false); setPromo(""); setMinutes(0); setDetail([]); setModal(false); setAction(null); setOrderId(""); setCafe([]) }}
+                onClose={() => { setTmpAction(""); setPaymentMethod("cash"); setDetail([]); setTypeDiscount(true); setIsDiscount(false); setTmpCafe({ item: [] }); setUseDurasi(false); setItem({}); setEdit({}); setClient(undefined); setInputBayar(""); setHours(0); setDurasi(""); setUsePromo(false); setValue(""); setCafe([]); setEditNama(false); setPromo(""); setMinutes(0); setDetail([]); setModal(false); setAction(null); setOrderId(""); setCafe([]) }}
                 aria-labelledby="actionModal"
             >
                 <CModalHeader>
@@ -4857,7 +4889,7 @@ const Table = () => {
                                 {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableRow>
                                     <CTableDataCell colSpan={6} ><CButton color='success' onClick={() => {
                                         var tmpOrder = { ...detail }
-                                        tmpOrder?.item?.push({ qty: 1, harga: 0, name: "", isNew: true })
+                                        tmpOrder?.item?.push({ qty: 1, harga: 0, name: "", isNew: true, category: "board game" })
                                         setDetail(tmpOrder)
                                     }}>+</CButton></CTableDataCell>
                                 </CTableRow>}
@@ -5011,14 +5043,24 @@ const Table = () => {
                                         />
                                     </CTableDataCell>
                                 </CTableRow>}
-                                {detail?.status === "PAYMENT" && <CTableRow>
+                                {(detail?.paymentMethod !== "" && detail?.pay) && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>{titleCase(detail?.paymentMethod)}</b></CTableDataCell>
+                                    <CTableDataCell>
+                                        <b>{formatNumber(detail?.pay)}</b>
+                                    </CTableDataCell>
+                                </CTableRow>}
+                                {(detail?.status === "PAYMENT") && <CTableRow>
                                     <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
                                     <CTableDataCell>{formatNumber(Math.max(0, inputBayar - hitungGrandTotal()))}</CTableDataCell>
+                                </CTableRow>}
+                                {(detail?.paymentMethod !== "" && detail?.pay) && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(Math.max(0, detail?.pay - hitungGrandTotal()))}</CTableDataCell>
                                 </CTableRow>}
                             </CTableBody>
                         </CTable>
                     </CContainer>
-                    {(detail?.status === "PAYMENT" && paymentMethod === "cash") && (
+                    {(detail?.status === "PAYMENT" && paymentMethod === "cash") && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") && (
                         <CContainer fluid>
                             <CCard className="mt-4">
                                 <CCardHeader className="text-center">
@@ -5069,7 +5111,7 @@ const Table = () => {
 
                     )}
 
-                    {detail?.status === "PAYMENT" && <CContainer>
+                    {detail?.status === "PAYMENT" && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") && <CContainer>
                         <CRow className="justify-content-center mt-5">
                             <CCol>
                                 <CCard>
@@ -5078,7 +5120,7 @@ const Table = () => {
                                     </CCardHeader>
                                     <CCardBody>
                                         <CRow className="mb-3">
-                                            <CCol md="6">
+                                            <CCol md="4" className="mb-3">
                                                 <CCard
                                                     className={`p-3 ${paymentMethod === 'cash' ? 'border-primary' : ''}`}
                                                     onClick={() => handlePaymentChange('cash')}
@@ -5093,22 +5135,69 @@ const Table = () => {
                                                     <p className="small text-muted">Bayar dengan menggunakan uang tunai.</p>
                                                 </CCard>
                                             </CCol>
-                                            <CCol md="6">
+                                            <CCol md="4" className="mb-3">
                                                 <CCard
-                                                    className={`p-3 ${paymentMethod === 'cashless' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('cashless')}
+                                                    className={`p-3 ${paymentMethod === 'qris' ? 'border-primary' : ''}`}
+                                                    onClick={() => handlePaymentChange('qris')}
                                                     style={{ cursor: 'pointer', height: "125px" }}
                                                 >
                                                     <CFormLabel htmlFor="cash" className="font-weight-bold">
                                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                                             <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" />
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Non Tunai</CFormLabel>
+                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>QRIS</CFormLabel>
+                                                        </div>
+                                                    </CFormLabel>
+                                                    {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
+                                                    <p className="small text-muted">Bayar dengan menggunakan QRIS</p>
+                                                </CCard>
+                                            </CCol>
+                                            <CCol md="4" className="mb-3">
+                                                <CCard
+                                                    className={`p-3 ${paymentMethod === 'debit' ? 'border-primary' : ''}`}
+                                                    onClick={() => handlePaymentChange('debit')}
+                                                    style={{ cursor: 'pointer', height: "125px" }}
+                                                >
+                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                            {/* <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" /> */}
+                                                            <CIcon icon={cilCreditCard} size="3xl"></CIcon>
+                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Kartu Debit</CFormLabel>
                                                         </div>
                                                     </CFormLabel>
                                                     {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
                                                     <p className="small text-muted">Bayar dengan menggunakan uang non tunai.</p>
                                                 </CCard>
                                             </CCol>
+                                            {/* <CCol md="4" className="mb-3">
+                                                <CCard
+                                                    className={`p-3 ${paymentMethod === 'grabfood' ? 'border-primary' : ''}`}
+                                                    onClick={() => handlePaymentChange('grabfood')}
+                                                    style={{ cursor: 'pointer', height: "125px" }}
+                                                >
+                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                            <img src={grabFood} alt="GrabFood" width={30} className="mr-2" />
+                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Grabfood</CFormLabel>
+                                                        </div>
+                                                    </CFormLabel>
+                                                    <p className="small text-muted">Grabfood Order</p>
+                                                </CCard>
+                                            </CCol>
+                                            <CCol md="4" className="mb-3">
+                                                <CCard
+                                                    className={`p-3 ${paymentMethod === 'gofood' ? 'border-primary' : ''}`}
+                                                    onClick={() => handlePaymentChange('gofood')}
+                                                    style={{ cursor: 'pointer', height: "125px" }}
+                                                >
+                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                            <img src={goFood} alt="GoFood" width={80} className="mr-2" />
+                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Go-Food</CFormLabel>
+                                                        </div>
+                                                    </CFormLabel>
+                                                    <p className="small text-muted">Go-Food Order</p>
+                                                </CCard>
+                                            </CCol> */}
                                         </CRow>
                                     </CCardBody>
                                 </CCard>

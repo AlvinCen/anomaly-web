@@ -529,6 +529,8 @@ const StorageLog = () => {
                     { name: "#", key: "index" },
                     { name: "Nama Item", key: "name" },
                     { name: "Stok", key: "stok" },
+                    { name: "Harga", key: "harga" },
+                    { name: "Cost Per Item", key: "costPerItem" },
                     { name: "Expired", key: "expired" },
                     { name: "Event Type", key: "event" },
                     { name: "Comment", key: "comment" },

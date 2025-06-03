@@ -98,7 +98,7 @@ const AppSidebar = () => {
     >
       <CSidebarHeader className="border-bottom">
         <CSidebarBrand to="/">
-          {/* <CCardImage className="sidebar-brand-full" src={logo} /> */}
+          {/* <CCardImage className="sidebar-brand-full" src={logo} height={200} width={400}/> */}
           {/* <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} /> */}
         </CSidebarBrand>
         <CCloseButton

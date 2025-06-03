@@ -30,7 +30,7 @@ const OrderCafe = () => {
     const [search, setSearch] = useState('');
 
     const handleAddToCart = (newItem) => {
-        delete newItem.category
+        // delete newItem.category
         delete newItem.photoURL
         delete newItem.status
         delete newItem.createdAt
@@ -43,7 +43,7 @@ const OrderCafe = () => {
         };
 
         const existingItem = cartItems.find((item) => item.id === newItem.id 
-        && compareAddons(item.addOns, newItem.addOns) && item.note === note);
+        && compareAddons(item.addOns, newItem.addOns) && item.note === newItem.note);
 
         if (existingItem) {
             // Jika item dengan kombinasi add-ons yang sama sudah ada, tambahkan kuantitasnya
@@ -52,7 +52,7 @@ const OrderCafe = () => {
             ));
         } else {
             // Jika item dengan kombinasi add-ons yang berbeda, tambahkan sebagai item baru
-            setCartItems([...cartItems, { ...newItem, qty: 1 }]);
+            setCartItems([...cartItems, { ...newItem, qty: 1 , category: newItem?.category?.value}]);
         }
         // setInventory(inventory.map((item) =>
         //     item?.id === newItem?.id ? { ...item, stok: item.stok - 1 } : item

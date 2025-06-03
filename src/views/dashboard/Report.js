@@ -84,8 +84,14 @@ import Loading from '../../components/Loading'
 import Swal from 'sweetalert2'
 import { ConsoleView } from 'react-device-detect'
 import api from '../../axiosInstance'
+import { useAuth } from '../../AuthContext'
+import { faAnchor, faDice, faHammer, faPercent, faTable } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import DoughnutChartQty from '../../components/DoughnutChart'
 
 const Report = () => {
+  const { currentUser } = useAuth();
+
   const [isLoading,] = useState(false)
   const [loadingInit, setLoadingInit] = useState(false)
   const [today, setToday] = useState(0)
@@ -103,11 +109,15 @@ const Report = () => {
   const [col, setCol] = useState("")
   const [title, setTitle] = useState("")
 
-  const [startProductDate, setStartProductDate] = useState(moment().format("YYYY-MM-DD").toString());
-  const [endProductDate, setEndProductDate] = useState(moment().format("YYYY-MM-DD").toString());
+  const [startProductDateBoardGame, setStartProductDateBoardGame] = useState(moment().format("YYYY-MM-DD").toString());
+  const [endProductDateBoardGame, setEndProductDateBoardGame] = useState(moment().format("YYYY-MM-DD").toString());
+  const [startProductDateCafe, setStartProductDateCafe] = useState(moment().format("YYYY-MM-DD").toString());
+  const [endProductDateCafe, setEndProductDateCafe] = useState(moment().format("YYYY-MM-DD").toString());
 
-  const [productData, setProductData] = useState([]);
-  const [filterProduct, setFilterProduct] = useState([]);
+  const [productBoardGame, setProductBoardGame] = useState([]);
+  const [filterProductBoardGame, setFilterProductBoardGame] = useState([]);
+  const [productCafe, setProductCafe] = useState([]);
+  const [filterProductCafe, setFilterProductCafe] = useState([]);
 
   const [activeBtn, setActiveBtn] = useState("Day")
   const [activeBtnCafe, setActiveBtnCafe] = useState("Day")
@@ -116,18 +126,22 @@ const Report = () => {
   const [dataCafe, setDataCafe] = useState([])
   const [initDataMerch, setInitDataMerch] = useState(false)
   const [dataMerch, setDataMerch] = useState([])
+  const [storageLog, setStorageLog] = useState([])
   const [data, setData] = useState([])
-  const [total, setTotal] = useState([])
-  const [table, setTable] = useState([])
-  const [cafe, setCafe] = useState([])
+  const [gross, setGross] = useState(0)
+  const [net, setNet] = useState(0)
+  const [table, setTable] = useState(0)
+  const [netCafe, setNetCafe] = useState(0)
+  const [cafe, setCafe] = useState(0)
+  const [discount, setDiscount] = useState(0)
+  const [tax, setTax] = useState(0)
   const [cashCafe, setCashCafe] = useState([])
   const [qrisCafe, setQrisCafe] = useState([])
-  const [tax, setTax] = useState([])
   const [service, setService] = useState([])
   // const [service, set] = useState([])
   const [filterData, setFilterData] = useState([])
   const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD").toString());
-  const [endDate, setEndDate] = useState(moment().add("1", "days").format("YYYY-MM-DD").toString());
+  const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD").toString());
   const [startDateCafe, setStartDateCafe] = useState(moment().format("YYYY-MM-DD").toString());
   const [endDateCafe, setEndDateCafe] = useState(moment().add("1", "days").format("YYYY-MM-DD").toString());
   const [action, setAction] = useState(null)
@@ -670,7 +684,6 @@ const Report = () => {
     }
     setVisible(false)
     setLoading(false)
-      (false)
   }
 
 
@@ -861,6 +874,35 @@ const Report = () => {
   //   };
   // }, [initProduct]);
 
+
+  const compareAddons = (addons1, addons2) => {
+    if (addons1.length !== addons2.length) return false;
+    return addons1.every((addon) => addons2.some((a) => a.name === addon.name));
+  };
+
+  function mergeItems(items) {
+    const merged = [];
+
+    // var sortedItems =  items.sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
+    // const sortedItems = items.sort((a, b) => b.qty - a.qty);
+
+    items.forEach((item) => {
+      const existing = merged.find(
+        (i) => i.itemId === item.itemId && compareAddons(i.addOns, item.addOns)
+      );
+
+      if (existing) {
+        existing.qty = Number(existing.qty || 0) + Number(item.qty || 0);
+        existing.totalHarga = Number(existing.totalHarga || 0) + Number(item.totalHarga || 0);
+      } else {
+        merged.push({ ...item });
+      }
+    });
+
+
+    return merged;
+  }
+
   useEffect(() => {
     if (Object.keys(hapus).length > 0) {
       Swal.fire({
@@ -1034,48 +1076,79 @@ const Report = () => {
     }
   };
 
-  // Fungsi untuk mengambil data merchandise
-  const fetchMerchData = async () => {
+  // // Fungsi untuk mengambil data merchandise
+  // const fetchMerchData = async () => {
+  //   try {
+  //     const response = await api.post('/data', {
+  //       collection: "merchandise",
+  //       filter: {},
+  //       sort: {}
+  //     })
+  //     setDataMerch(response.data);
+  //     setInitDataMerch(true);
+  //   } catch (error) {
+  //     console.error('Error fetching merchandise data:', error);
+  //     // Swal.fire('Error', 'Gagal memuat data merchandise', 'error');
+  //   } finally {
+  //     (false);
+  //   }
+  // };
+  const fetchStorageLog = async () => {
     try {
       const response = await api.post('/data', {
-        collection: "merchandise",
+        collection: "storageLog",
         filter: {},
         sort: {}
       })
-      setDataMerch(response.data);
-      setInitDataMerch(true);
+      console.log()
+      setStorageLog(response.data);
     } catch (error) {
       console.error('Error fetching merchandise data:', error);
       // Swal.fire('Error', 'Gagal memuat data merchandise', 'error');
-    } finally {
-      (false);
     }
   };
 
   // Fungsi untuk mengambil data menu report
-  const fetchMenuReports = async () => {
+  const fetchProductReport = async () => {
     try {
       const response = await api.post('/data', {
         collection: "productReport",
         filter: {},
         sort: {}
       })
-      console.log(response.data)
-      setProductData(response.data);
+      const data = response.data
+      const productCafe = data.filter((data) => data.category === "")
+      const mergeCafe = mergeItems(productCafe)
+      const sortedCafe = mergeCafe.sort((a, b) => b.qty - a.qty);
+      const productBoardGame = data.filter((data) => data.category === "board game")
+      const mergeBoardGame = mergeItems(productBoardGame)
+      const sortedBoardGame = mergeBoardGame.sort((a, b) => b.qty - a.qty);
+      setProductBoardGame(sortedBoardGame);
+      setProductCafe(sortedCafe);
       setInitProduct(true);
 
       // Filter data berdasarkan tanggal jika diperlukan
-      if (startProductDate && endProductDate) {
-        const filtered = response.data.filter(item =>
-          moment(item.createdAt).isBetween(startProductDate, endProductDate)
-        );
-        setFilterProduct(filtered);
+      if (startProductDateBoardGame && endProductDateBoardGame) {
+        const filtered = productBoardGame.filter(item => {
+          return moment(new Date(item.createdAt)).tz("Asia/Jakarta").isBetween(moment(startProductDateBoardGame).startOf("day"), moment(endProductDateBoardGame).endOf("day"))
+        });
+        var merge = mergeItems(filtered);
+        const sortedData = merge.sort((a, b) => b.qty - a.qty);
+        setFilterProductBoardGame(sortedData);
+      }
+      if (startProductDateCafe && endProductDateCafe) {
+        const filtered = productCafe.filter(item => {
+          return moment(new Date(item.createdAt)).tz("Asia/Jakarta").isBetween(moment(startProductDateCafe).startOf("day"), moment(endProductDateCafe).endOf("day"))
+        });
+        var merge = mergeItems(filtered);
+        const sortedData = merge.sort((a, b) => b.qty - a.qty);
+        setFilterProductCafe(sortedData);
       }
     } catch (error) {
       console.error('Error fetching menu reports:', error);
       // Swal.fire('Error', 'Gagal memuat laporan menu', 'error');
     } finally {
-      (false);
+      setLoading(false);
     }
   };
 
@@ -1141,45 +1214,109 @@ const Report = () => {
   // Fungsi untuk mengambil data dengan filter
   const fetchFilteredData = async () => {
     try {
-      const params = {
-        startDate: moment(startDate).format('YYYY-MM-DD'),
-        endDate: moment(endDate).format('YYYY-MM-DD'),
-        statuses: ['PAYMENT', 'CLOSE']
-      };
+      const mStart = moment(startDate).tz("Asia/Jakarta").startOf("day").format();
+      const mEnd = moment(endDate).tz("Asia/Jakarta").endOf("day").format();
 
-      const response = await api.post('/data', {
-        collection: "booking",
-        filter: params,
-        sort: {}
-      })
-      const tmpData = response.data;
+      const tmpData = cashier.filter(cashier => {
+        var createdAt = moment(cashier.createdAt).tz("Asia/Jakarta")
+        return createdAt.isBetween(mStart, mEnd, undefined, '[]');
+      });
 
-      // Hitung total
-      const tableTotal = tmpData.reduce((total, data) => {
-        const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-        return total + Number(harga);
-      }, 0);
+      if (tmpData.length > 0) {
+        // Hitung total
+        const tableTotal = tmpData?.reduce((dailyTotal, cashier) => {
+          var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+            var total = transaction?.item.reduce((total, item) => {
+              // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+              const harga = item?.harga || 0;
+              if (item?.tipe) return total + ((Number(harga)) * item?.qty);
+              else return total
+            }, 0);
+            return grandTotal + (total || 0)
+          }, 0)
+          return (total || 0) + dailyTotal
+        }, 0)
 
-      // Hitung merchandise
-      const merchResponse = await api.post('/data', {
-        collection: "booking",
-        filter: params,
-        sort: {}
-      })
-      const merchData = merchResponse.data;
+        const cafeTotal = tmpData?.reduce((dailyTotal, cashier) => {
+          var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+            var total = transaction?.item.reduce((total, item) => {
+              // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+              var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                return total1 + Number(item1.harga);
+              }, 0) : 0
+              const harga = item?.harga || 0;
+              if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+              else return total
+            }, 0);
+            return grandTotal + (total || 0)
+          }, 0)
+          return (total || 0) + dailyTotal
+        }, 0)
 
-      const cafeTotal = merchData.reduce((total, data) => {
-        const promoItems = data?.item?.filter(item => !item.hasOwnProperty('duration'));
-        const tmpTotal = promoItems?.reduce((totalPromo, item) => {
-          return Number(totalPromo) + (Number(item?.harga) * Number(item?.qty));
-        }, 0);
-        return Number(total) + (Number(tmpTotal) || 0);
-      }, 0);
+        const discountTotal = tmpData?.reduce((dailyTotal, cashier) => {
+          var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+            var cafeTotal = transaction?.item.reduce((total, item) => {
+              // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+              var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                return total1 + Number(item1.harga);
+              }, 0) : 0
+              const harga = item?.harga || 0;
+              if (item?.addOns !== undefined) return total + (((Number(harga) + Number(totalAddOn)) * item?.qty) || 0);
+              else return total
+            }, 0);
+            var transactionDiscount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
+            return grandTotal + transactionDiscount
+          }, 0)
+          return (total || 0) + dailyTotal
+        }, 0)
 
-      setTotal(tableTotal + cafeTotal);
-      setTable(tableTotal);
-      setCafe(cafeTotal);
-      setFilterData(tmpData);
+        const taxTotal = tmpData?.reduce((dailyTotal, cashier) => {
+          var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+            var cafeTotal = transaction?.item.reduce((total, item) => {
+              // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+              var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                return total1 + Number(item1.harga);
+              }, 0) : 0
+              const harga = item?.harga || 0;
+              if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+              else return total
+            }, 0);
+            var tax = transaction?.tax * (cafeTotal || 0)
+            return grandTotal + tax
+          }, 0)
+          return (total || 0) + dailyTotal
+        }, 0)
+
+        const totalCost = (storageLog || []).reduce((total, storage) => {
+          if (storage?.beforeStok > storage?.stok) {
+            var usedStok = Number(storage.beforeStok) - Number(storage.stok)
+            return total + (usedStok * storage?.costPerItem)
+          }
+          else return total
+        }, 0)
+
+        // console.log(totalCost)
+
+        setGross((tableTotal + cafeTotal) || 0);
+        setNet(((tableTotal + cafeTotal) + taxTotal - discountTotal) || 0);
+        setTable(tableTotal || 0);
+        setCafe(cafeTotal || 0)
+        // setNetCafe(cafeTotal || 0)
+        setDiscount(discountTotal || 0)
+        setTax(taxTotal || 0)
+        setFilterData(tmpData);
+      } else {
+
+        setGross(0);
+        setNet(0);
+        setTable(0);
+        setCafe(0)
+        setNetCafe(0)
+        setDiscount(0)
+        setTax(0)
+        setFilterData([]);
+      }
+
     } catch (error) {
       console.error('Error fetching filtered data:', error);
     }
@@ -1189,7 +1326,7 @@ const Report = () => {
   const fetchFilteredProducts = async () => {
     try {
       const response = await api.post('/data', {
-        collection: "menuReport",
+        collection: "productReport",
         filter: {
           startDate: startProductDate,
           endDate: endProductDate
@@ -1207,8 +1344,10 @@ const Report = () => {
     const loadInitialData = async () => {
       await fetchBookings();
       await fetchCafeData();
-      await fetchMerchData();
-      await fetchMenuReports();
+      // await fetchMerchData();
+      await fetchStorageLog();
+      await fetchFilteredData();
+      await fetchProductReport();
       await fetchCashiers();
       await calculateIncome();
       setLoadingInit(false);
@@ -1220,16 +1359,16 @@ const Report = () => {
   }, [loadingInit, refresh]);
 
   useEffect(() => {
-    if (initData && initDataCafe && initDataMerch && init && initProduct) {
+    if (startDate && endDate) {
       fetchFilteredData();
     }
-  }, [activeBtn, startDate, endDate, initData, initDataCafe, initDataMerch, init, initProduct]);
+  }, [activeBtn, cashier, startDate, endDate]);
 
   useEffect(() => {
-    if (startProductDate && endProductDate && initProduct) {
-      fetchFilteredProducts();
+    if ((startProductDateBoardGame && endProductDateBoardGame) || (startProductDateCafe && endProductDateCafe)) {
+      fetchProductReport();
     }
-  }, [startProductDate, endProductDate, initProduct]);
+  }, [startProductDateBoardGame, endProductDateBoardGame, startProductDateCafe, endProductDateCafe]);
 
   const renderModal = () => {
     switch (action) {
@@ -1490,7 +1629,7 @@ const Report = () => {
               <CTable>
                 <CTableHead>
                   <CTableRow>
-                    <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>
+                    {currentUser?.role === "superadmin" && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
                     <CTableHeaderCell style={{ width: "200px" }}>Uang Masuk</CTableHeaderCell>
                     <CTableHeaderCell>Note</CTableHeaderCell>
                     <CTableHeaderCell>Tanggal</CTableHeaderCell>
@@ -1501,9 +1640,9 @@ const Report = () => {
                     // console.log(item)
                     return (
                       <CTableRow key={idx}>
-                        <CTableDataCell>
+                        {currentUser?.role === "superadmin" && <CTableDataCell>
                           <CButton color='danger' className='me-1' onClick={() => hapusPemasukan(idx)}>✗</CButton>
-                        </CTableDataCell>
+                        </CTableDataCell>}
                         <CTableDataCell>{formatNumber(item?.value)}</CTableDataCell>
                         <CTableDataCell>{item?.note}</CTableDataCell>
                         <CTableDataCell>{moment(item?.createdAt).format("DD/MM/YYYY HH:mm:ss")}</CTableDataCell>
@@ -1520,7 +1659,7 @@ const Report = () => {
               <CTable>
                 <CTableHead>
                   <CTableRow>
-                    <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>
+                    {currentUser?.role === "superadmin" && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
                     <CTableHeaderCell style={{ width: "200px" }}>Uang Keluar</CTableHeaderCell>
                     <CTableHeaderCell>Note</CTableHeaderCell>
                     <CTableHeaderCell>Tanggal</CTableHeaderCell>
@@ -1531,9 +1670,9 @@ const Report = () => {
                     // console.log(item)
                     return (
                       <CTableRow key={idx}>
-                        <CTableDataCell>
+                        {currentUser?.role === "superadmin" && <CTableDataCell>
                           <CButton color='danger' className='me-1' onClick={() => hapusPengeluaran(idx)}>✗</CButton>
-                        </CTableDataCell>
+                        </CTableDataCell>}
                         <CTableDataCell>{formatNumber(item?.value)}</CTableDataCell>
                         <CTableDataCell>{item?.note}</CTableDataCell>
                         <CTableDataCell>{moment(item?.createdAt).format("DD/MM/YYYY HH:mm:ss")}</CTableDataCell>
@@ -1783,7 +1922,7 @@ const Report = () => {
             <CRow>
               <CCol sm={5}>
                 <h4 id="traffic" className="card-title mb-0">
-                  Detail Income
+                  Detail Revenue
                 </h4>
                 {/* <div className="small text-body-secondary">{moment(startDate).format("DD MMMM YYYY")} - {moment(endDate).format("DD MMMM YYYY")}</div> */}
               </CCol>
@@ -1878,15 +2017,23 @@ const Report = () => {
                   className="mb-3"
                   color="success"
                   icon={<CIcon icon={cilCash} height={24} />}
-                  title="Total Income"
-                  value={`Rp. ${formatNumber(total)}`} />
+                  title="Net Sales"
+                  value={`Rp. ${formatNumber(net)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="success"
+                  icon={<CIcon icon={cilCash} height={24} />}
+                  title="Gross Sales"
+                  value={`Rp. ${formatNumber(gross)}`} />
               </CCol>
               <CCol xs={12} md={6}>
                 <CWidgetStatsF
                   className="mb-3"
                   color="info"
-                  icon={<CIcon icon={cilTablet} height={24} />}
-                  title="Board Game Income"
+                  icon={<FontAwesomeIcon icon={faDice} />}
+                  title="Net Board Game Revenue"
                   value={`Rp. ${formatNumber(table)}`} />
               </CCol>
               <CCol xs={12} md={6}>
@@ -1894,8 +2041,24 @@ const Report = () => {
                   className="mb-3"
                   color="primary"
                   icon={<CIcon icon={cilCoffee} height={24} />}
-                  title="Cafe Income"
+                  title="Gross Cafe Revenue"
                   value={`Rp. ${formatNumber(cafe)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="warning"
+                  icon={<FontAwesomeIcon icon={faPercent} />}
+                  title="Sales Discount"
+                  value={`Rp. ${formatNumber(discount)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="danger"
+                  icon={<FontAwesomeIcon icon={faAnchor} />}
+                  title="Sales PB1"
+                  value={`Rp. ${formatNumber(tax)}`} />
               </CCol>
             </CRow>
           </CCardFooter>
@@ -2040,274 +2203,11 @@ const Report = () => {
         // defaultDate={moment().format("YYYY-MM-DD").toString()}
         />
 
-        {/* <CCard className="mb-4">
-          <CCardBody>
-            <CRow>
-              <CCol sm={5}>
-                <h4 id="traffic" className="card-title mb-0">
-                  Detail Income Cafe
-                </h4>
-              </CCol>
-              <CCol sm={7}>
-                <CButtonGroup className="float-end me-3 mb-2">
-                  {['Day', 'Month'].map((value) => (
-                    <CButton
-                      color="outline-secondary"
-                      key={value}
-                      className="mx-0"
-                      onClick={() => setActiveBtnCafe(value)}
-                      active={value === activeBtnCafe}
-                    >
-                      {value}
-                    </CButton>
-                  ))}
-                </CButtonGroup>
-                <CInputGroup>
-                  {activeBtnCafe === "Day" && <>
-                    <CFormInput
-                      type="date"
-                      className='mb-3'
-                      value={startDateCafe}
-                      onChange={(e) => setStartDateCafe(e.target.value)}
-                      placeholder="Start Date"
-                      aria-label="Start Date"
-                    />
-                    <CInputGroupText className='mb-3'
-                    >~</CInputGroupText>
-                    <CFormInput
-                      type="date"
-                      className='mb-3'
-                      value={endDateCafe}
-                      onChange={(e) => setEndDateCafe(e.target.value)}
-                      placeholder="End Date"
-                      aria-label="End Date"
-                    />
-                    <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartDateCafe(""); setEndDateCafe("") }}><b>x</b></CInputGroupText>
-                  </>}
-                  {activeBtnCafe === "Month" && <>
-                    <CFormSelect
-                      value={startDate}
-                      onChange={(e) => setStartDateCafe(e.target.value)}
-                      style={{ height: "38px" }}
-                    >
-                      <option value="">Pilih Bulan</option>
-                      <option value="January">January</option>
-                      <option value="February">February</option>
-                      <option value="March">March</option>
-                      <option value="April">April</option>
-                      <option value="May">May</option>
-                      <option value="June">June</option>
-                      <option value="July">July</option>
-                      <option value="August">August</option>
-                      <option value="September">September</option>
-                      <option value="October">October</option>
-                      <option value="November">November</option>
-                      <option value="December">December</option>
-                    </CFormSelect>
-                    <CInputGroupText className='mb-3'
-                    >~</CInputGroupText>
-                    <CFormSelect
-                      value={endDateCafe}
-                      onChange={(e) => setEndDateCafe(e.target.value)}
-                      style={{ height: "38px" }}
-                    >
-                      <option value="">Pilih Bulan</option>
-                      <option value="January">January</option>
-                      <option value="February">February</option>
-                      <option value="March">March</option>
-                      <option value="April">April</option>
-                      <option value="May">May</option>
-                      <option value="June">June</option>
-                      <option value="July">July</option>
-                      <option value="August">August</option>
-                      <option value="September">September</option>
-                      <option value="October">October</option>
-                      <option value="November">November</option>
-                      <option value="December">December</option>
-                    </CFormSelect>
-                    <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartDateCafe(""); setEndDateCafe("") }}><b>x</b></CInputGroupText>
-                  </>}
-                </CInputGroup>
-              </CCol>
-            </CRow>
-          </CCardBody>
-          <CCardFooter>
-            <CRow>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="success"
-                  icon={<CIcon icon={cilCash} height={24} />}
-                  title="Cafe (Cash)"
-                  value={`Rp. ${formatNumber(cashCafe)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="warning"
-                  icon={<CIcon icon={cilPaperPlane} height={24} />}
-                  title="Cafe (QRIS)"
-                  value={`Rp. ${formatNumber(qrisCafe)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="danger"
-                  icon={<CIcon icon={cilEnvelopeClosed} height={24} />}
-                  title="Tax"
-                  value={`Rp. ${formatNumber(tax)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="primary"
-                  icon={<CIcon icon={cilPeople} height={24} />}
-                  title="Service"
-                  value={`Rp. ${formatNumber(service)}`} />
-              </CCol>
-
-            </CRow>
-          </CCardFooter>
-        </CCard> */}
-
-        {/* <CRow>
-          <CCol xs>
-            {errorCafe && <CAlert color="danger">{errorCafe}</CAlert>}
-            <CCard className="mb-4">
-              <CCardHeader><b>Buka / Tutup Kasir Cafe</b></CCardHeader>
-              <CCardBody>
-                <CForm>
-                  <CContainer>
-                    {tmpCashierCafe === undefined && <CRow className="mb-3">
-                      <CFormLabel className="col-sm-3 col-form-label">Saldo Awal</CFormLabel>
-                      <CCol sm={9}>
-                        <CFormInput
-                          type="text"
-                          placeholder="Input Saldo Awal"
-                          value={formatNumber(saldoAwalCafe)}
-                          onChange={(e) => setSaldoAwalCafe(e.target.value.replace(/,/g, ""))}
-                          feedbackInvalid="Input hanya menerima angka."
-                          required
-                        />
-                      </CCol>
-                    </CRow>}
-                    {tmpCashierCafe?.status === "OPEN" && <>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Saldo Awal</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            value={formatNumber(tmpCashierCafe?.saldoAwal)}
-                            plainText
-                          />
-                        </CCol>
-                      </CRow>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Total Transaksi Tunai</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            style={{ color: "green" }}
-                            value={`+${formatNumber(tmpCashCafe)}`}
-                            plainText
-                          />
-                        </CCol>
-                      </CRow>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Total Uang Masuk</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            style={{ color: "green" }}
-                            value={`+${formatNumber(tmpPemasukanCafe)}`}
-                            plainText
-                          />
-                        </CCol>
-                      </CRow>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Total Uang Keluar</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            style={{ color: "red" }}
-                            value={`-${formatNumber(tmpPengeluaranCafe)}`}
-                            plainText
-                          />
-                        </CCol>
-                      </CRow>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Saldo Akhir</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            placeholder="Input Saldo Akhir"
-                            value={formatNumber(saldoAkhirCafe)}
-                            onChange={(e) => setSaldoAkhirCafe(e.target.value.replace(/,/g, ""))}
-                            feedbackInvalid="Input hanya menerima angka."
-                            required
-                          />
-                        </CCol>
-                      </CRow>
-                      <CRow className="mb-3">
-                        <CFormLabel className="col-sm-3 col-form-label">Selisih</CFormLabel>
-                        <CCol sm={9}>
-                          <CFormInput
-                            type="text"
-                            style={{ color: Math.sign(selisihCafe) === -1 ? "red" : "green" }}
-                            value={formatNumber(selisihCafe)}
-                            plainText
-                          />
-                        </CCol>
-                      </CRow>
-                    </>}
-                    <CCol xs={12} className="d-flex justify-content-end">
-                      {!loading ?
-                        (tmpCashierCafe === undefined ?
-                          <CButton color="primary" type="submit" onClick={(e) => openCashier(e, "cashierCafe")}> Buka Kasir</CButton> :
-                          <>
-                            <CButton color="primary" className='me-2' onClick={() => { setVisible(true); setAction("cash_in"); setCol("cashierCafe") }}> Uang Masuk</CButton>
-                            <CButton color="info" className='me-2' onClick={() => { setVisible(true); setAction("cash_out"); setCol("cashierCafe") }}> Uang Keluar</CButton>
-                            <CButton color="danger" type="submit" onClick={(e) => { closeCashier(e, "cashierCafe") }}> Tutup Kasir</CButton>
-                          </>
-                        )
-                        : <CSpinner color="primary" className="float-end" variant="grow" />}
-                    </CCol>
-                  </CContainer>
-                </CForm>
-              </CCardBody>
-            </CCard>
-          </CCol>
-        </CRow>
-        {/* {console.log(dataCafe)} */}
-        {/*<AppTable
-          title={"Laporan Kasir Cafe"}
-          column={[
-            { name: "#", key: "index" },
-            { name: "Tanggal", key: "tanggal" },
-            { name: "Jam Buka", key: "time_in" },
-            { name: "Jam Tutup", key: "closeAt" },
-            { name: "Saldo Awal", key: "saldoAwal" },
-            { name: "Pemasukan", key: "pemasukan" },
-            { name: "Pengeluaran", key: "pengeluaran" },
-            { name: "Saldo Akhir", key: "saldoAkhir" },
-            { name: "Action", key: "action" },
-          ]}
-          query={query(collection(firestore, "cashierCafe"), orderBy("createdAt", "desc"))}
-
-          cashierData={detailCashierCafe}
-          filterDate={true}
-          setTitle={setTitle}
-          setDetail={setDetail}
-          setVisible={setVisible}
-          setAction={setAction}
-          setHapus={setHapus}
-        /> */}
-
         <CRow>
           <CCol xs="12" md="12">
             <CCard>
               <CCardHeader>
-                <b>Laporan Produk</b>
+                <b>Laporan Produk Board Game</b>
               </CCardHeader>
               <CCardBody>
                 <CRow className='justify-content-end'>
@@ -2316,9 +2216,9 @@ const Report = () => {
                       <CFormInput
                         type="date"
                         className='mb-3'
-                        value={startProductDate}
+                        value={startProductDateBoardGame}
                         onChange={(e) => {
-                          setStartProductDate(e.target.value)
+                          setStartProductDateBoardGame(e.target.value)
                         }}
                         placeholder="Start Date"
                         aria-label="Start Date"
@@ -2328,60 +2228,150 @@ const Report = () => {
                       <CFormInput
                         type="date"
                         className='mb-3'
-                        value={endProductDate}
+                        value={endProductDateBoardGame}
+                        onChange={(e) => {
+                          setEndProductDateBoardGame(e.target.value)
+                        }}
+                        placeholder="End Date"
+                        aria-label="End Date"
+                      />
+                      <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartProductDateBoardGame(""); setEndProductDateBoardGame(""); setFilterProductBoardGame([]) }}><b>x</b></CInputGroupText>
+                    </CInputGroup>
+                  </CCol>
+                </CRow>
+                {((startProductDateBoardGame !== "" && endProductDateBoardGame !== "") ? filterProductBoardGame.length > 0 : productBoardGame.length > 0) && <CRow>
+                  <CCol>
+                    <div style={{ width: '400px', height: '400px' }}>
+                      <DoughnutChartQty data={(startProductDateBoardGame !== "" && endProductDateBoardGame !== "") ? filterProductBoardGame : productBoardGame} />
+                    </div>
+                  </CCol>
+                  <CCol>
+                    <div style={{ maxHeight: "500px", overflowY: "auto" }} >
+                      <CTable border={1} hover responsive striped bordered>
+                        <CTableHead>
+                          <CTableRow>
+                            <CTableHeaderCell>Nama Item</CTableHeaderCell>
+                            <CTableHeaderCell>Qty</CTableHeaderCell>
+                          </CTableRow>
+                        </CTableHead>
+                        <CTableBody>
+                          {(startProductDateBoardGame !== "" && endProductDateBoardGame !== "") ? filterProductBoardGame.map((product, index) => (
+                            <CTableRow key={index}>
+                              <CTableDataCell>{product.name}</CTableDataCell>
+                              <CTableDataCell>{product.qty}</CTableDataCell>
+                              {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
+                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                            </CTableRow>
+                          )) :
+                            productBoardGame.map((product, index) => (
+                              <CTableRow key={index}>
+                                <CTableDataCell>{product.name}</CTableDataCell>
+                                <CTableDataCell>{product.qty}</CTableDataCell>
+                                {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
+                            <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                              </CTableRow>
+                            ))
+                          }
+                          {/* <CTableRow>
+                        <CTableDataCell colSpan={3}><b>Total</b></CTableDataCell>
+                        <CTableDataCell><b>{formatNumber(productData.reduce((total, data) => { return total + (data?.harga * data?.qty) }, 0))}</b></CTableDataCell>
+                      </CTableRow> */}
+                        </CTableBody>
+                      </CTable>
+                    </div>
+                  </CCol>
+                </CRow>}
+
+              </CCardBody>
+            </CCard>
+          </CCol>
+        </CRow>
+        <CRow>
+          <CCol xs="12" md="12">
+            <CCard>
+              <CCardHeader>
+                <b>Laporan Produk Cafe</b>
+              </CCardHeader>
+              <CCardBody>
+                <CRow className='justify-content-end'>
+                  <CCol xs={9} md={7} lg={6} xl={5}>
+                    <CInputGroup style={{ width: "100%" }}>
+                      <CFormInput
+                        type="date"
+                        className='mb-3'
+                        value={startProductDateCafe}
+                        onChange={(e) => {
+                          setStartProductDateCafe(e.target.value)
+                        }}
+                        placeholder="Start Date"
+                        aria-label="Start Date"
+                      />
+                      <CInputGroupText className='mb-3'
+                      >~</CInputGroupText>
+                      <CFormInput
+                        type="date"
+                        className='mb-3'
+                        value={endProductDateCafe}
                         onChange={(e) => {
                           setEndProductDate(e.target.value)
                         }}
                         placeholder="End Date"
                         aria-label="End Date"
                       />
-                      <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartProductDate(""); setEndProductDate(""); setFilterProduct([]) }}><b>x</b></CInputGroupText>
+                      <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartProductDateCafe(""); setEndProductDateCafe(""); setFilterProductCafe([]) }}><b>x</b></CInputGroupText>
                     </CInputGroup>
                   </CCol>
                 </CRow>
-
-                <div style={{ maxHeight: "500px", overflowY: "auto" }} >
-                  <CTable striped responsive>
-                    <CTableHead>
-                      <CTableRow>
-                        <CTableHeaderCell>Nama Item</CTableHeaderCell>
-                        <CTableHeaderCell>Qty</CTableHeaderCell>
-                        <CTableHeaderCell>Harga</CTableHeaderCell>
-                        <CTableHeaderCell>Total Harga</CTableHeaderCell>
-                      </CTableRow>
-                    </CTableHead>
-                    <CTableBody>
-                      {(startProductDate !== "" && endProductDate !== "") ? filterProduct.map((product, index) => (
-                        <CTableRow key={index}>
-                          <CTableDataCell>{product.name}</CTableDataCell>
-                          <CTableDataCell>{product.qty}</CTableDataCell>
-                          <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
-                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell>
-                        </CTableRow>
-                      )) :
-                        productData.map((product, index) => (
-                          <CTableRow key={index}>
-                            <CTableDataCell>{product.name}</CTableDataCell>
-                            <CTableDataCell>{product.qty}</CTableDataCell>
-                            <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
-                            <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell>
+                {((startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe.length > 0 : productCafe.length > 0) && <CRow>
+                  <CCol>
+                    <div style={{ width: '400px', height: '400px' }}>
+                      <DoughnutChartQty data={(startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe : productCafe} />
+                    </div>
+                  </CCol>
+                  <CCol>
+                    <div style={{ maxHeight: "500px", overflowY: "auto" }} >
+                      <CTable border={1} hover responsive striped bordered>
+                        <CTableHead>
+                          <CTableRow>
+                            <CTableHeaderCell>Nama Item</CTableHeaderCell>
+                            <CTableHeaderCell>Qty</CTableHeaderCell>
                           </CTableRow>
-                        ))
-                      }
-                      <CTableRow>
+                        </CTableHead>
+                        <CTableBody>
+                          {(startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe.map((product, index) => (
+                            <CTableRow key={index}>
+                              <CTableDataCell>{product.name}</CTableDataCell>
+                              <CTableDataCell>{product.qty}</CTableDataCell>
+                              {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
+                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                            </CTableRow>
+                          )) :
+                            productCafe.map((product, index) => (
+                              <CTableRow key={index}>
+                                <CTableDataCell>{product.name}</CTableDataCell>
+                                <CTableDataCell>{product.qty}</CTableDataCell>
+                                {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
+                            <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                              </CTableRow>
+                            ))
+                          }
+                          {/* <CTableRow>
                         <CTableDataCell colSpan={3}><b>Total</b></CTableDataCell>
                         <CTableDataCell><b>{formatNumber(productData.reduce((total, data) => { return total + (data?.harga * data?.qty) }, 0))}</b></CTableDataCell>
-                      </CTableRow>
-                    </CTableBody>
-                  </CTable>
-                </div>
-
+                      </CTableRow> */}
+                        </CTableBody>
+                      </CTable>
+                    </div>
+                  </CCol>
+                </CRow>}
 
               </CCardBody>
             </CCard>
           </CCol>
         </CRow>
       </> : <Loading />}
+
+
       <CModal
         size="lg"
         scrollable

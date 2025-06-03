@@ -258,7 +258,6 @@ const AppTable = (
         sort, // Urutan data
       });
       var sortedData = isSort ? sortByExpiredDate(response.data) : response.data
-      console.log(sortedData)
       setParentData(sortedData)
       setData(sortedData);
     } catch (error) {
@@ -567,14 +566,18 @@ const AppTable = (
                 {column.map((column, index) => {
                   if (column.key === "expiredStok") {
                     return <CTableHeaderCell key={index} onClick={handleSort} className="bg-body">{column.name} {isAscending ? "↑" : "↓"}</CTableHeaderCell>
-                  } else
+                  }
+                  else if (column.key === "stok") {
+                    return <CTableHeaderCell key={index} style={{ width: title === "Storage Log" ? "120px" : "" }} className="bg-body">{column.name}</CTableHeaderCell>
+                  }
+                  else
                     return <CTableHeaderCell key={index} className="bg-body">{column.name}</CTableHeaderCell>
                 })}
               </CTableRow>
             </CTableHead>
             <CTableBody>
               {currentData.map((data, index1) => {
-                var totalStok = title === "Management Storage" && data?.stok?.reduce((sum, s) => sum + s.qty ? s.qty : s.berat, 0);
+                var totalStok = title === "Management Storage" && data?.stok?.reduce((sum, s) => sum + (data?.tipe === "qty" ? s.qty : s.berat), 0);
                 if (data?.tipe === "berat") {
                   totalStok = totalStok >= 1000 ? totalStok / 1000 + " kg" : totalStok + " gram"
                 }
@@ -589,21 +592,18 @@ const AppTable = (
                       currentUser?.hasAccessPos?.find((access) => access.name === location.pathname && access.view) ||
                       currentUser?.hasAccessManage?.find((access) => access.name === location.pathname && access.view)
                     ) {
+
                       if (currentUser?.role === "superadmin" || currentUser?.hasAccessPos?.find((access) => access.name === location.pathname && access.update) || currentUser?.hasAccessManage?.find((access) => access.name === location.pathname && access.update)
                       ) {
                         color = "primary"
                         if (title === "Laporan Kasir") {
                           render.push(
                             <CButton className='me-2' size="sm" color="warning" onClick={() => { setDetail(data); setAction("edit"); setVisible(true) }}><CIcon icon={cilPencil} /> Edit</CButton>)
-                          render.push(
-                            <CButton className='me-2' size="sm" color="primary" onClick={() => exportToExcel(data, `Laporan-Anomaly-${moment(data?.createdAt).format("DD-MM-YYYY")}.xlsx`)}><CIcon icon={cilShare} /> Export</CButton>)
-                          render.push(
-                            <CButton className='me-2' size="sm" color="info" onClick={() => { setDetail(data); setTitle("pool"); setAction("detail"); setVisible(true) }}>Detail</CButton>)
                         } else {
                           if (title === "Management Storage") {
                             render.push(
                               <CButton className='me-2' size="sm" color="warning" onClick={() => { setDetail(data); setAction("detail"); setVisible(true) }}><CIcon icon={cilPencil} /> Edit</CButton>)
-                          } else if (data?.order !== "close" && data?.status !== "CLOSE" && title !== "Management Subscription") {
+                          } else if (data?.status !== "CLOSE" && title !== "Management Subscription") {
                             render.push(
                               <CButton className='me-2' size="sm" color="warning" onClick={() => { setEdit(data); setAction("edit"); setVisible(true) }}><CIcon icon={cilPencil} /> Edit</CButton>)
                           }
@@ -616,6 +616,12 @@ const AppTable = (
                           <CButton color="danger" className='me-2' size="sm" onClick={() => { setHapus(data); }}><CIcon icon={cilTrash} /> Delete</CButton>
                         )
                       }
+                    }
+                    if (title === "Laporan Kasir") {
+                      render.push(
+                        <CButton className='me-2' size="sm" color="primary" onClick={() => exportToExcel(data, `Laporan-Anomaly-${moment(data?.createdAt).format("DD-MM-YYYY")}.xlsx`)}><CIcon icon={cilShare} /> Export</CButton>)
+                      render.push(
+                        <CButton className='me-2' size="sm" color="info" onClick={() => { setDetail(data); setTitle("pool"); setAction("detail"); setVisible(true) }}>Detail</CButton>)
                     }
                     switch (column.key) {
                       case "tableName": return <CTableDataCell key={column.key + index}>{data?.tableName ? data?.tableName : data?.table}</CTableDataCell>
@@ -776,17 +782,18 @@ const AppTable = (
                       case "total": return <CTableDataCell key={column.key + index}>{data?.[column.key] ? formatNumber(data?.[column.key]) : "-"}</CTableDataCell>
                       case "harga": return <CTableDataCell key={column.key + index}>{data?.[column.key] ? formatNumber(data?.[column.key]) : "-"}</CTableDataCell>
                       case "late": return <CTableDataCell key={column.key + index}>{data?.[column.key] ? "Ya" : "Tidak"}</CTableDataCell>
+                      case "stok": return <CTableDataCell key={column.key + index}>{data?.beforeStok === data?.stok ? data?.stok : `${data?.beforeStok || 0} → ${data?.stok}`}</CTableDataCell>
                       case "totalStok": return <CTableDataCell key={column.key + index}>{totalStok}</CTableDataCell>
                       case "expiredStok": return <CTableDataCell key={column.key + index}>{getNearestExpired(data?.stok)?.expired}</CTableDataCell>
                       case "subscription": return <CTableDataCell key={column.key + index}>{data?.subscription?.expired ? data?.subscription?.expired : "-"}</CTableDataCell>
-                      case "priceList": return <CTableDataCell key={column.key + index}>
-                        <ul className="mb-0">
-                          {
-                            data?.priceList.map((data, index) => {
-                              return <li key={index} className="small">  {data.name} </li>
-                            })
-                          }  </ul>
-                      </CTableDataCell>
+                      // case "priceList": return <CTableDataCell key={column.key + index}>
+                      //   <ul className="mb-0">
+                      //     {
+                      //       data?.priceList.map((data, index) => {
+                      //         return <li key={index} className="small">  {data.name} </li>
+                      //       })
+                      //     }  </ul>
+                      // </CTableDataCell>
                       case "index": return
                       default:
                         if (Array.isArray(data?.[column.key])) {

@@ -8,6 +8,9 @@ const Cafe = React.lazy(() => import('./views/cafe/Cafe'))
 const Storage = React.lazy(() => import('./views/storage/StorageList'))
 const OrderCafe = React.lazy(() => import('./views/cafe/OrderCafe'))
 const Checkout = React.lazy(() => import('./views/cafe/Checkout'))
+// const ManageRecipe = React.lazy(() => import('./views/recipe/ManageRecipe'))
+const ReportStorage = React.lazy(() => import('./views/storage/ReportStorage'))
+
 const ManageMenu = React.lazy(() => import('./views/menu/ManageMenu'))
 const ManageMerch = React.lazy(() => import('./views/merchandise/ManageMerch'))
 const ManageMember = React.lazy(() => import('./views/member/ManageMember'))
@@ -32,6 +35,8 @@ const routes = [
   { path: '/table', name: 'Table', element: Table },
   { path: '/table/manage', name: 'Manage Table', element: ManageTable },
   { path: '/table/price-list', name: 'Manage Table Price List', element: ManageTablePrice },
+  // { path: '/recipe/manage', name: 'Manage Recipe', element: ManageRecipe },
+  { path: '/storage/report', name: 'Report Storage', element: ReportStorage },
   { path: '/storage/manage', name: 'Manage Storage', element: Storage },
   { path: '/storage/log', name: 'Storage Log', element: StorageLog },
   { path: '/member/manage', name: 'Manage Member', element: ManageMember },

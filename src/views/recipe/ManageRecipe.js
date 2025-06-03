@@ -10,7 +10,7 @@ import ReactSelectAsyncCreatable from 'react-select/async-creatable';
 import { useAuth } from '../../AuthContext.js';
 import api from '../../axiosInstance.js';
 
-const StorageList = () => {
+const ManageRecipe = () => {
     const { currentUser } = useAuth();
 
     const [loading, setLoading] = useState(false);
@@ -205,52 +205,38 @@ const StorageList = () => {
                 var updatedStok = storageData?.stok.map(s => {
                     if (s.expired === expired) {
                         matchExpired = true
-                        if (Number(s.harga) === Number(harga))
-                            if (tipe === "qty")
-                                return { ...s, qty: Number(s.qty) + Number(stok), costPerItem: Number(harga) / Number(stok) }; // update qty
-                            else if (tipe === "berat")
-                                return { ...s, berat: Number(s.berat) + Number(berat), costPerItem: Number(harga) / Number(berat) }; // update qty
-                    } else {
-                        return { ...s, costPerItem: berat !== 0 && berat !== undefined ? Number(harga) / Number(berat) : Number(harga) / Number(stok) }; // tetap
+                        if (Number(s.harga) === Number(harga) && tipe === "qty") return { ...s, qty: Number(s.qty) + Number(stok) }; // update qty
+                        else if (tipe === "berat") return { ...s, berat: Number(s.berat) + Number(berat) }; // update qty
                     }
+                    return s; // tetap
                 });
+                console.log(updatedStok)
 
-                const updateQuery = {};
-
-                if (matchExpired) {
-                    updateQuery.$set = {
-                        stok: updatedStok,
-                    };
-                } else {
-                    updateQuery.$push = {
-                        stok: tipe === "qty"
-                            ? {
-                                expired,
-                                harga,
-                                qty: Number(stok),
-                                costPerItem: Number(harga) / Number(stok),
-                            }
-                            : {
-                                expired,
-                                harga,
-                                berat: Number(berat),
-                                costPerItem: Number(harga) / Number(berat),
-                            }
-                    };
-                }
-
-                // Tambahkan updatedAt di $set
-                updateQuery.$set = {
-                    ...(updateQuery.$set || {}),
-                    updatedAt: moment().format(),
-                };
-
-                const res = await api.put("/data/update", {
+                await api.put("/data/update", {
                     collection: "storage",
                     filter: { _id: nama?._id },
-                    update: updateQuery
+                    update: {
+                        $push: !matchExpired ?
+                            (tipe === "qty" ? {
+                                stok: {
+                                    expired,
+                                    harga,
+                                    qty: Number(stok),
+                                }
+                            } :
+                                {
+                                    stok: {
+                                        expired,
+                                        harga,
+                                        berat: Number(berat),
+                                    }
+                                }) : {},
+                        $set: matchExpired ? {
+                            stok: updatedStok
+                        } : {},
+                        updatedAt: moment().format().toString(),
+                    }
                 });
-
                 await api.post("/data/add", {
                     collection: "storageLog",
                     data: {
@@ -268,7 +254,6 @@ const StorageList = () => {
                                 expired,
                                 harga,
                                 qty: Number(stok),
-                                costPerItem: Number(harga) / Number(stok)
                             }],
                             tipe,
                             createdAt: moment().format().toString(),
@@ -291,7 +276,6 @@ const StorageList = () => {
                                 expired,
                                 harga,
                                 berat: Number(berat),
-                                costPerItem: Number(harga) / Number(berat)
                             }],
                             tipe,
                             createdAt: moment().format().toString(),
@@ -330,45 +314,27 @@ const StorageList = () => {
         e.preventDefault();
         setLoading(true)
 
-        var data = {
+        const data = {
             storageId: detail?._id,
             name: detail?.name,
-            tipe: detail?.tipe,
-            stok: detail?.tipe === "qty" ? Number(stok) : Number(berat),
+            stok: Number(stok),
             comment: comment,
             expired: expired,
+            event: Number(stok) === 0 ? "delete" : "update",
             createdAt: moment().format().toString(),
-            event: "update",
             createdBy: currentUser.name ? currentUser.name : currentUser.username
         }
         try {
             if (detail?._id) {
                 var updatedStok = detail?.stok.map(s => {
                     if (s.expired === expired) {
-                        // return { ...s, qty: Number(stok) }; // update qty
-                        data.harga = Number(s.harga)
-                        data.costPerItem = Number(s.costPerItem)
-                        if (detail?.tipe === "qty") {
-                            data.beforeStok = Number(s.qty)
-                            return { ...s, qty: Number(stok) }; // update qty}}
-                        }
-                        else if (detail?.tipe === "berat") {
-                            data.beforeStok = Number(s.berat)
-                            return { ...s, berat: Number(berat) }; // update qty}
-                        }
-                    } else return s; // tetap
+                        return { ...s, qty: Number(stok) }; // update qty
+                    }
+                    return s; // tetap
                 });
 
                 // Hapus kalau qty = 0
-                if (detail?.tipe === "qty" || detail?.tipe === undefined) {
-                    updatedStok = updatedStok.filter(s => s.qty > 0);
-                }
-                else {
-                    updatedStok = updatedStok.filter(s => s.berat > 0);
-
-                }
-                // console.log(detail)
-                // console.log(data)
+                updatedStok = updatedStok.filter(s => s.qty > 0);
                 await api.put("/data/update", {
                     collection: "storage",
                     filter: { _id: detail?._id },
@@ -383,7 +349,7 @@ const StorageList = () => {
                     collection: "storageLog",
                     data: {
                         ...data,
-                        storageId: detail?._id
+                        storageId: nama?._id
                     }
                 });
             }
@@ -511,7 +477,7 @@ const StorageList = () => {
                                 {tipe === "berat" && <CRow className="mb-3">
                                     <CFormLabel className="col-sm-2 col-form-label">Berat (gram)</CFormLabel>
                                     <CCol sm={10}>
-                                        <CFormInput type="text" value={formatNumber(berat)} onChange={(e) => { setBerat(e.target.value.replace(/,/g, "")) }} />
+                                        <CFormInput type="number" min={1} value={berat} onChange={(e) => { setBerat(e.target.value) }} />
                                     </CCol>
                                 </CRow>}
                                 <CRow className="mb-3">
@@ -565,18 +531,18 @@ const StorageList = () => {
                         </CModalHeader>
                         <CModalBody>
                             <CContainer>
-                                {(detail?.tipe === "qty" || detail?.tipe === undefined) && <CRow className="mb-3">
+                                <CRow className="mb-3">
                                     <CFormLabel className="col-sm-2 col-form-label">Stok</CFormLabel>
                                     <CCol sm={10}>
                                         <CFormInput type="number" min={1} max={edit?.qty} value={stok} onChange={(e) => { setStok(e.target.value) }} />
                                     </CCol>
-                                </CRow>}
-                                {detail?.tipe === "berat" && < CRow className="mb-3">
+                                </CRow>
+                                <CRow className="mb-3">
                                     <CFormLabel className="col-sm-2 col-form-label">Berat (gram)</CFormLabel>
                                     <CCol sm={10}>
-                                        <CFormInput type="text" value={formatNumber(berat)} onChange={(e) => { setBerat(e.target.value.replace(/,/g, "")) }} />
+                                        <CFormInput type="number" min={1} max={edit?.berat} value={berat} onChange={(e) => { setBerat(e.target.value) }} />
                                     </CCol>
-                                </CRow>}
+                                </CRow>
                                 <CRow className="mb-3">
                                     <CFormLabel className="col-sm-2 col-form-label">Comment</CFormLabel>
                                     <CCol>
@@ -589,7 +555,7 @@ const StorageList = () => {
                                     </CCol>
                                 </CRow>
                             </CContainer>
-                        </CModalBody >
+                        </CModalBody>
                         <CModalFooter>
                             <CButton color="primary" onClick={() => { setAction("detail"); setVisible(true) }}>← Kembali</CButton>
                             <CButton color="warning" onClick={updateItem}>Update</CButton>
@@ -621,7 +587,7 @@ const StorageList = () => {
                                             <CTableDataCell>{detail?.tipe === "berat" ?
                                                 (data?.berat >= 1000 ? (data?.berat / 1000) + " kg" : data?.berat + " gr")
                                                 : data?.qty}</CTableDataCell>
-                                            <CTableDataCell>{formatNumber(data?.harga)}</CTableDataCell>
+                                            <CTableDataCell>{data?.harga}</CTableDataCell>
                                             <CTableDataCell>{moment(data?.expired).format("DD MMMM YYYY")}</CTableDataCell>
                                             <CTableDataCell>
                                                 <CButton className='me-2' size="sm" color="warning"
@@ -747,17 +713,16 @@ const StorageList = () => {
             }
         >
             <AppTable
-                title={"Management Storage"}
+                title={"Management Recipe"}
                 column={[
                     { name: "#", key: "index" },
-                    { name: "Nama Item", key: "name" },
-                    { name: "Total Stok", key: "totalStok" },
-                    // { name: "Harga", key: "harga" },
-                    { name: "Expired", key: "expiredStok" },
+                    { name: "Nama Menu", key: "name" },
+                    { name: "HPP", key: "harga" },
+                    // { name: "Expired", key: "expiredStok" },
                     { name: "Action", key: "action" }
                 ]}
                 sortDesc={true}
-                collection="storage" // Use the MongoDB endpoint
+                collection="recipe" // Use the MongoDB endpoint
                 filter={{}} // Empty filter by default
                 sort={{ createdAt: -1 }} // Sort by newest first
                 isSort={true}
@@ -793,4 +758,4 @@ const StorageList = () => {
     );
 };
 
-export default StorageList;
+export default ManageRecipe;

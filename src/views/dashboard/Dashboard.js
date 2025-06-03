@@ -63,10 +63,11 @@ const Dashboard = () => {
 
   return (
     <>
-      {
+      {/* {
         currentUser?.role === "superadmin" ? <Report /> :
           <Attendance />
-      }
+      } */}
+      <Report />
     </>
   )
 }

@@ -8,11 +8,11 @@ const { authMiddleware } = require("../middlewares/authMiddleware");
 
 const convertDateFields = (data, dateFields = []) => {
     for (const key of dateFields) {
-      if (data[key] && typeof data[key] === "string" && !isNaN(Date.parse(data[key]))) {
-        data[key] = new Date(data[key]);
-      }
+        if (data[key] && typeof data[key] === "string" && !isNaN(Date.parse(data[key]))) {
+            data[key] = new Date(data[key]);
+        }
     }
-  };
+};
 
 // Fungsi untuk mendapatkan model koleksi secara dinamis
 const getModel = (collection) => {
@@ -74,8 +74,9 @@ router.post("/data/add", authMiddleware, async (req, res) => {
         let newData
         const { collection, data } = req.body;
         if (!collection || !data) return res.status(400).json({ error: "Nama koleksi dan data harus diberikan!" });
-        
-        if(collection ==="cashier") convertDateFields(data, ["createdAt"])
+
+        if (collection === "cashier") convertDateFields(data, ["createdAt"])
+        else if (collection === "storageLog") convertDateFields(data, ["createdAt"])
 
         const Model = getModel(collection);
         if (collection === "tableHistory") {
@@ -101,7 +102,8 @@ router.put("/data/update", authMiddleware, async (req, res) => {
         var tmpUpdate = req.body.update
         if (!collection || !filter || !update) return res.status(400).json({ error: "Nama koleksi, filter, dan update harus diberikan!" });
 
-        if(collection ==="cashier") convertDateFields(update, ["closeAt"])
+        if (collection === "cashier") convertDateFields(update, ["closeAt"])
+        else if (collection === "storageLog") convertDateFields(update, ["createdAt"])
 
         const Model = getModel(collection);
         // if (collection === "user") tmpUpdate = { ...tmpUpdate, password: await bcrypt.hash(tmpUpdate?.password, 10) }

@@ -18,6 +18,8 @@ import api from '../../axiosInstance';
 
 
 const Checkout = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     // const [cartItems, setCartItems] = useState([]);
     // const [selectedCategory, setSelectedCategory] = useState('all');
     const { currentUser } = useAuth();
@@ -27,10 +29,12 @@ const Checkout = () => {
     const [client, setClient] = useState("")
     const [nomor, setNomor] = useState("")
     const [tipe, setTipe] = useState("open")
+    const [orderId, setOrderId] = useState("")
     const [cashier, setCashier] = useState(currentUser?.name)
     const [validated, setValidated] = useState(false)
     const [dataClient, setDataClient] = useState([])
     const [dataTable, setDataTable] = useState([])
+    const [cartItems, setCartItems] = useState(location.state?.cartItems || [])
     const [table, setTable] = useState("")
     const [initTable, setInitTable] = useState(false)
     const [initClient, setInitClient] = useState(false)
@@ -38,11 +42,11 @@ const Checkout = () => {
 
     const [isService, setIsService] = useState(false);
     const [isTax, setIsTax] = useState(true);
-    const [isDiscount, setIsDiscount] = useState(true);
+    const [isDiscount, setIsDiscount] = useState(false);
     const [typeDiscount, setTypeDiscount] = useState(true);
 
 
-    const [tax, setTax] = useState(11);
+    const [tax, setTax] = useState(10);
     const [discount, setDiscount] = useState(20);
 
 
@@ -52,9 +56,6 @@ const Checkout = () => {
 
     var total = 0
 
-    const location = useLocation();
-    const navigate = useNavigate();
-    const cartItems = location.state?.cartItems
     const menu = location?.state?.menu
     const cafe = location?.state?.cafe
     const tmpTable = location?.state?.table
@@ -164,6 +165,21 @@ const Checkout = () => {
         }),
     };
 
+    function ceilingPrice(harga) {
+        const sisa = harga % 1000;
+
+        if (sisa === 0 || sisa === 500) {
+            return harga; // Sudah kelipatan 500 atau 1000, tidak dibulatkan
+        }
+
+        if (sisa < 500) {
+            return harga - sisa + 500;
+        } else {
+            return harga - sisa + 1000;
+        }
+    }
+
+
     const fetchTables = async () => {
         try {
             const response = await api.post("/data", {
@@ -175,7 +191,11 @@ const Checkout = () => {
             // response.data.forEach((data) => {
             //     tmpData.push({ id: data._id, client: data?.client, category: data?.category, name: data?.name, value: data?._id, label: data?.name })
             // })
-            tmpData.unshift({ label: "Takeaway", value: "takeaway" })
+            tmpData.unshift(
+                { label: "Takeaway", value: "takeaway" },
+                { label: "Grabfood", value: "grabfood" },
+                { label: "Go-Food", value: "gofood" },
+            )
             setDataTable(tmpData);
         } catch (error) {
             console.error("Error fetching table data: ", error);
@@ -341,6 +361,70 @@ const Checkout = () => {
         fetchMembers()
     }, [])
 
+    useEffect(() => {
+        if (table?.value !== "takeaway" && table?.value !== undefined) {
+            const tmpCartItems = cartItems.map((item) => {
+                // Tambah 25% ke harga utama
+                var updatedHarga = 0
+                var updatedAddOns = item.addOns || []
+                if (item.tmpHarga === undefined) {
+                    updatedHarga = ceilingPrice(Math.round(Number(item?.harga) * 1.25));
+                    // Tambah 25% ke harga addOns (jika ada)
+                    updatedAddOns = item.addOns?.length
+                        ? item.addOns.map(addOn => ({
+                            ...addOn,
+                            tmpHarga: addOn.harga,
+                            harga: ceilingPrice(Math.round(Number(addOn.harga) * 1.25))
+                        }))
+                        : item.addOns;
+                }
+
+
+
+                return {
+                    ...item,
+                    tmpHarga: item.tmpHarga === undefined ? item.harga : item.tmpHarga,
+                    harga: item.tmpHarga === undefined ? updatedHarga : item?.harga,
+                    addOns: updatedAddOns
+                };
+            });
+
+            console.log("🧾 Harga dengan 25% tambahan:", tmpCartItems);
+            // Jika ingin disimpan ke state:
+            setCartItems(tmpCartItems)
+        } else if (table?.value !== undefined) {
+            const tmpCartItems = cartItems.map((item) => {
+                // Tambah 25% ke harga utama
+
+                const updatedAddOns = item.addOns?.length
+                    ? item.addOns.map(addOn => {
+                        if (addOn.tmpHarga !== undefined) {
+                            var tmpHarga = addOn.tmpHarga
+                            delete addOn.tmpHarga
+                            return {
+                                ...addOn,
+                                harga: tmpHarga
+                            }
+                        }
+                    })
+                    : item.addOns;
+                if (item?.tmpHarga !== undefined) {
+                    var tmpHarga = item.tmpHarga
+                    delete item.tmpHarga
+                    return {
+                        ...item,
+                        harga: tmpHarga,
+                        addOns: updatedAddOns
+                    };
+                }
+
+            });
+
+            setCartItems(tmpCartItems)
+            console.log("📦 Tidak ada tambahan harga karena takeaway.");
+        }
+    }, [table]);
+
 
     const submit = async (event) => {
         event.preventDefault();
@@ -366,10 +450,10 @@ const Checkout = () => {
 
             var data = {
                 client: client,
-                order: table?.value === "takeaway" ? "close" : "open",
+                order: "close",
                 cashier: currentUser?.name,
-                tableName: table?.value === "Takeaway" ? "takeaway" : table?.id,
-                table: table?.value === "takeaway" ? "takeaway" : table?.id,
+                tableName: table?.value,
+                table: table?.value,
                 total: total,
                 tax: isTax ? tax / 100 : 0,
                 service: isService ? service / 100 : 0,
@@ -380,55 +464,56 @@ const Checkout = () => {
                 orderId: "",
                 pauseTimes: [],
                 typeDiscount,
-                status: table?.value === "takeaway" ? "PAYMENT" : "AKTIF"
+                status: "PAYMENT"
             };
+
+            console.log(data)
+            console.log(client)
 
             // console.log(nomor)
             if (action === "open") {
                 sessionStorage.clear();
                 navigate("/table", { state: { cafe: data, poolData: poolData, menu: menu } })
             } else {
-                if (!client?.id) {
-                    const response = await api.post("/data/add", {
-                        collection: "member",
-                        data: {
-                            name: client?.label,
-                            nomor,
-                            status: "AKTIF",
-                            createdAt: moment().utcOffset("+07:00").format()
-                        }
-                    });
-                    if (response.data.newData?._id) client.id = response.data.newData._id;
-                    else throw new Error("Gagal membuat data member");
-                }
-                if (client?.id) {
+                if (table?.value === "takeaway") {
+                    if (!client?.id) {
+                        const response = await api.post("/data/add", {
+                            collection: "member",
+                            data: {
+                                name: client?.label,
+                                nomor,
+                                status: "AKTIF",
+                                createdAt: moment().utcOffset("+07:00").format()
+                            }
+                        });
+                        if (response.data.newData?._id) client.id = response.data.newData._id;
+                        else throw new Error("Gagal membuat data member");
+                    }
+                    if (client?.id) {
+                        const response = await api.post("/data/add", {
+                            collection: "tableHistory",
+                            data: data
+                        });
+                        delete data.table
+                        data.orderId = response.data.newData._id;
+
+                    }
+                } else if (table?.value === "grabfood" || table?.value === "gofood") {
+                    data.client = table?.value === "grabfood" ? { name: "GF-" + orderId, nomor: "" } : { name: "F-" + orderId, nomor: "" }
                     const response = await api.post("/data/add", {
                         collection: "tableHistory",
                         data: data
                     });
-                    delete data.table
-                    data.orderId = response.data.newData._id;
-
-                    // if (table?.value === "takeaway") {
-                    //     for (let item of cartItems) {
-                    //         await api.put("/data/update", {
-                    //             collection: "menuReport ",
-                    //             filter: { _id: item._id },
-                    //             update: { $inc: { qty: item.qty } }
-                    //         });
-                    //     }
-                    // }
-
-                    // await addDoc(collection(firestore, "cafe"), data);
                 }
+
                 else throw new Error("Failed")
 
 
-                await api.put("/data/update", {
-                    collection: "tableHistory",
-                    filter: { _id: tmpTable?.id ? tmpTable?.id : (table?.id ? table?.id : table?.value) },
-                    update: data
-                });
+                // await api.put("/data/update", {
+                //     collection: "tableHistory",
+                //     filter: { _id: tmpTable?.id ? tmpTable?.id : (table?.id ? table?.id : table?.value) },
+                //     update: data
+                // });
 
                 // const batch = writeBatch(firestore);
 
@@ -559,7 +644,8 @@ const Checkout = () => {
                         onSubmit={submit}
                     >
                         <CCardBody>
-                            {action === undefined && <CRow className='mb-3'>
+                            {action === undefined &&
+                                (table?.value === "takeaway" || table?.value === undefined) ? <CRow className='mb-3'>
                                 <CCol>
                                     <CFormLabel className="col-sm-3 col-form-label w-100">Nama Customer </CFormLabel>
                                     {/* <ReactSelectCreatable
@@ -602,7 +688,20 @@ const Checkout = () => {
                                         placeholder='Input Nomor HP'
                                         required />
                                 </CCol>
-                            </CRow>}
+                            </CRow> :
+                                <CRow className='mb-3'>
+                                    <CFormLabel className="col-sm-3 col-form-label">Order ID</CFormLabel>
+                                    <CCol>
+                                        <CInputGroup>
+                                            <CInputGroupText>{table?.value === "grabfood" ? <b>GF-</b> : <b>F-</b>}</CInputGroupText>
+                                            <CFormInput type="text"
+                                                value={orderId}
+                                                onChange={(e) => setOrderId(e.target.value)}
+                                                required />
+                                        </CInputGroup>
+                                    </CCol>
+                                </CRow>
+                            }
                             {/* <CRow className='mb-3'>
                                 <CFormLabel className="col-sm-3 col-form-label">Tipe Order</CFormLabel>
                                 <CCol>
@@ -612,17 +711,6 @@ const Checkout = () => {
                                         <option value="open">Open Bill</option>
                                         <option value="close">Closed Bill</option>
                                     </CFormSelect>
-                                </CCol>
-                            </CRow> */}
-                            {/* <CRow className='mb-3'>
-                                <CFormLabel className="col-sm-3 col-form-label">Nama Operator</CFormLabel>
-                                <CCol>
-                                    <CFormInput type="text"
-                                        value={currentUser?.name ? currentUser?.name : currentUser?.username}
-                                        plainText
-                                        disabled
-                                        onChange={(e) => setCashier(e.target.value)}
-                                        required />
                                 </CCol>
                             </CRow> */}
                             {action === undefined && <CRow className='mb-3'>
@@ -739,7 +827,7 @@ const Checkout = () => {
                                                 <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
                                                     checked={isTax}
                                                     onChange={(e) => setIsTax(e.target.checked)} />
-                                                <b>Tax {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
+                                                <b>PB1 {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
                                             <CTableDataCell>{isTax ? formatNumber(Math.ceil(total * (tax / 100))) : 0}</CTableDataCell>
                                         </CTableRow>
                                         <CTableRow>

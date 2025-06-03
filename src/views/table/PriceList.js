@@ -126,34 +126,35 @@ const PriceList = () => {
             sort: {}, // Urutan data
         });
 
-        const priceMap = new Map(tablePrices.data.map(p => [p._id, p]));
+        //BARU
+        // const priceMap = new Map(tablePrices.data.map(p => [p._id, p]));
 
-        for (const table of tables.data) {
-            const updatedPriceList = table.priceList.map(p => {
-                const latest = priceMap.get(p.value);
-                if (latest) {
-                    return {
-                        label: `${latest.name} (${Number(latest.harga).toLocaleString()})`,
-                        value: latest._id,
-                        harga: latest.harga,
-                        tipe: latest.tipe,
-                        duration: latest.duration,
-                    };
-                }
-                return p; // Jika tidak ditemukan, pakai yang lama
-            });
+        // for (const table of tables.data) {
+        //     // const updatedPriceList = table.priceList.map(p => {
+        //     //     const latest = priceMap.get(p.value);
+        //     //     if (latest) {
+        //     //         return {
+        //     //             label: `${latest.name} (${Number(latest.harga).toLocaleString()})`,
+        //     //             value: latest._id,
+        //     //             harga: latest.harga,
+        //     //             tipe: latest.tipe,
+        //     //             duration: latest.duration,
+        //     //         };
+        //     //     }
+        //     //     return p; // Jika tidak ditemukan, pakai yang lama
+        //     // });
 
-            await api.put("/data/update", {
-                collection: "table",
-                filter: { _id: table._id },
-                update: {
-                    $set: {
-                        priceList: updatedPriceList,
-                        updatedAt: moment().format().toString(),
-                    }
-                }
-            });
-        }
+        //     // await api.put("/data/update", {
+        //     //     collection: "table",
+        //     //     filter: { _id: table._id },
+        //     //     update: {
+        //     //         $set: {
+        //     //             // priceList: updatedPriceList,
+        //     //             updatedAt: moment().format().toString(),
+        //     //         }
+        //     //     }
+        //     // });
+        // }
     };
 
 
@@ -175,7 +176,7 @@ const PriceList = () => {
                 filter: { _id: edit?._id },
                 update: dataForm
             });
-            syncTablePrices();
+            // syncTablePrices();
             setRefresh(!refresh)
 
             Swal.fire("Success!", "Berhasil menambahkan data", "success");
