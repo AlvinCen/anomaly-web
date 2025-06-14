@@ -10,7 +10,7 @@ import ReactSelectAsyncCreatable from 'react-select/async-creatable';
 import { useAuth } from '../../AuthContext.js';
 import api from '../../axiosInstance.js';
 
-const ReportStorage = () => {
+const ExpenseStorage = () => {
     const { currentUser } = useAuth();
 
     const [loading, setLoading] = useState(false);
@@ -135,7 +135,7 @@ const ReportStorage = () => {
                     try {
                         await api.delete("/data/delete", {
                             data: {
-                                collection: "storageReport",
+                                collection: "storageExpense",
                                 filter: { _id: hapus?._id }
                             }
                         });
@@ -173,23 +173,20 @@ const ReportStorage = () => {
 
     const tambahLaporan = async (e) => {
         e.preventDefault();
-        setLoading(true)
+        // setLoading(true)
         const tmpData = {
             startDate,
             endDate
         }
-        console.log(tmpData)
         try {
-            setLoading(false)
             setVisible(false)
             Swal.fire({
                 title: "Updated!",
                 text: "Data berhasil ditambahkan",
                 icon: "success"
             });
-            await api.get("/storageReport", { params: tmpData });
+            await api.get("/storageExpense", { params: tmpData });
             setRefresh(!refresh)
-
 
         } catch (error) {
             Swal.fire({
@@ -198,7 +195,7 @@ const ReportStorage = () => {
                 icon: "error"
             });
         }
-
+        // setLoading(false)
     }
 
     const updateItem = async (e) => {
@@ -504,7 +501,7 @@ const ReportStorage = () => {
             }
         >
             <AppTable
-                title={"Storage Report"}
+                title={"Storage Expense"}
                 column={[
                     { name: "#", key: "index" },
                     { name: "Created At", key: "createdAt" },
@@ -514,7 +511,7 @@ const ReportStorage = () => {
                     { name: "Action", key: "action" }
                 ]}
                 sortDesc={true}
-                collection="storageReport" // Use the MongoDB endpoint
+                collection="storageExpense" // Use the MongoDB endpoint
                 filter={{}} // Empty filter by default
                 sort={{ createdAt: -1 }} // Sort by newest first
                 isSort={true}
@@ -534,11 +531,6 @@ const ReportStorage = () => {
                 alignment='center'
                 visible={visible}
                 onClose={() => {
-                    setNama("");
-                    setHarga(0);
-                    setDetail("");
-                    setStok(0);
-                    setStatus("");
                     setVisible(false);
                     setAction(null);
                 }}
@@ -550,4 +542,4 @@ const ReportStorage = () => {
     );
 };
 
-export default ReportStorage;
+export default ExpenseStorage;

@@ -392,7 +392,7 @@ const Checkout = () => {
             console.log("🧾 Harga dengan 25% tambahan:", tmpCartItems);
             // Jika ingin disimpan ke state:
             setCartItems(tmpCartItems)
-        } else if (table?.value !== undefined) {
+        } else if (table?.value !== "takeaway" && table?.value !== undefined) {
             const tmpCartItems = cartItems.map((item) => {
                 // Tambah 25% ke harga utama
 
@@ -755,7 +755,7 @@ const Checkout = () => {
                                                 var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
                                                     return total1 + Number(item1.harga);
                                                 }, 0) : 0
-                                                return total + totalAddOn + Number(item.harga * item.qty);
+                                                return total + totalAddOn + Number(item?.harga * item?.qty);
                                             }, 0)
 
                                             var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
@@ -771,11 +771,11 @@ const Checkout = () => {
 
                                                     <CTableDataCell>
                                                         <CFormInput type="text" value={item?.name} readOnly plainText />
-                                                        {item.addOns && item.addOns.length > 0 && (
+                                                        {item?.addOns && item?.addOns.length > 0 && (
                                                             <div className="mt-2">
                                                                 <strong>Add-ons:</strong>
                                                                 <ul className="mb-0">
-                                                                    {item.addOns.map((addon, index) => (
+                                                                    {item?.addOns.map((addon, index) => (
                                                                         <li key={index} className="small">
                                                                             {addon.name} (+Rp. {formatNumber(addon.harga)})
                                                                         </li>

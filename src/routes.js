@@ -9,6 +9,7 @@ const Storage = React.lazy(() => import('./views/storage/StorageList'))
 const OrderCafe = React.lazy(() => import('./views/cafe/OrderCafe'))
 const Checkout = React.lazy(() => import('./views/cafe/Checkout'))
 // const ManageRecipe = React.lazy(() => import('./views/recipe/ManageRecipe'))
+const ExpenseStorage = React.lazy(() => import('./views/storage/ExpenseStorage'))
 const ReportStorage = React.lazy(() => import('./views/storage/ReportStorage'))
 
 const ManageMenu = React.lazy(() => import('./views/menu/ManageMenu'))
@@ -36,6 +37,7 @@ const routes = [
   { path: '/table/manage', name: 'Manage Table', element: ManageTable },
   { path: '/table/price-list', name: 'Manage Table Price List', element: ManageTablePrice },
   // { path: '/recipe/manage', name: 'Manage Recipe', element: ManageRecipe },
+  { path: '/storage/expense', name: 'Expense Storage', element: ExpenseStorage },
   { path: '/storage/report', name: 'Report Storage', element: ReportStorage },
   { path: '/storage/manage', name: 'Manage Storage', element: Storage },
   { path: '/storage/log', name: 'Storage Log', element: StorageLog },

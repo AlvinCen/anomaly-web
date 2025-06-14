@@ -546,6 +546,7 @@ const StorageLog = () => {
                     { name: "delete", color: "danger" }
                 ]}
                 refresh={refresh}
+                // exportExcel={true}
                 setAction={setAction}
                 setVisible={setVisible}
                 setEdit={setEdit}

@@ -6,41 +6,62 @@ const getModel = (collection) => {
     return mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
 };
 
-const syncProductReport = async () => {
-    const TableHistory = getModel("tableHistory");
-    const ProductReport = getModel("productReport");
+// const syncProductReport = async () => {
+//     const TableHistory = getModel("tableHistory");
+//     const ProductReport = getModel("productReport");
 
-    const transactions = await TableHistory.find();
+//     const transactions = await TableHistory.find();
 
-    for (const trx of transactions) {
-        for (const item of trx.item || []) {
-            const exists = await ProductReport.findOne({
-                itemId: item.id,
-                createdAt: trx.createdAt
-            });
+//     for (const trx of transactions) {
+//         for (const item of trx.item || []) {
+//             const exists = await ProductReport.findOne({
+//                 itemId: item.id,
+//                 createdAt: trx.createdAt
+//             });
 
-            if (exists) continue; // Skip jika sudah ada
+//             if (exists) continue; // Skip jika sudah ada
 
-            const category = item.tipe ? "board game" : (item.addOns && item.addOns.length > 0 ? "cafe" : "");
+//             const category = item.tipe ? "board game" : (item.addOns && item.addOns.length > 0 ? "cafe" : "");
 
-            const report = {
-                itemId: item.id,
-                name: item.name,
-                qty: parseInt(item.qty),
-                harga: parseInt(item.harga),
-                addOns: item.addOns || [],
-                category,
-                createdAt: trx.createdAt,
-                discount: trx.discount || 0,
-                tax: trx.tax || 0
-            };
+//             const report = {
+//                 itemId: item.id,
+//                 name: item.name,
+//                 qty: parseInt(item.qty),
+//                 harga: parseInt(item.harga),
+//                 addOns: item.addOns || [],
+//                 category,
+//                 createdAt: trx.createdAt,
+//                 discount: trx.discount || 0,
+//                 tax: trx.tax || 0
+//             };
 
-            await ProductReport.create(report);
-        }
-    }
+//             await ProductReport.create(report);
+//         }
+//     }
 
-    console.log("✅ Sinkronisasi productReport selesai.");
-};
+//     console.log("✅ Sinkronisasi productReport selesai.");
+// };
+
+// const syncTableHistory = async () => {
+//     const tableHistory = getModel("tableHistory");
+
+//     // Ambil semua dokumen
+//     const allDocs = await tableHistory.find()
+//     console.log(`🔍 Ditemukan ${allDocs.length} dokumen.`);
+
+//     for (const doc of allDocs) {
+//         const updatedItems = doc.item.map(it => ({
+//             ...it,
+//             payAt: doc.createdAt
+//         }));
+
+//         await tableHistory.updateOne(
+//             { _id: doc._id },
+//             { $set: { item: updatedItems } }
+//         );
+//     }
+//     console.log("✅ Sinkronisasi tableHistory selesai.");
+// };
 
 // const syncStorage = async () => {
 //     const Storage = getModel("storage");
@@ -72,4 +93,5 @@ const syncProductReport = async () => {
 // };
 
 module.exports = syncProductReport;
+// module.exports = syncTableHistory;
 // module.exports = syncStorage;

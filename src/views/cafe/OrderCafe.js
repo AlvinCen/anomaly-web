@@ -35,8 +35,6 @@ const OrderCafe = () => {
         delete newItem.status
         delete newItem.createdAt
 
-        console.log(newItem)
-
         const compareAddons = (addons1, addons2) => {
             if (addons1.length !== addons2.length) return false;
             return addons1.every((addon) => addons2.some((a) => a.name === addon.name && a.harga === addon.harga));

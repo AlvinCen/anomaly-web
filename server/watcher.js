@@ -141,13 +141,15 @@ const startWatcher = async () => {
                                     { $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
                                     { $lt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
                                 ]
-                            }
+                            },
+                            status: "OPEN"
                         },
                         {
                             $expr: {
                                 $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
                             },
-                            closeAt: { $exists: false } // atau closeAt: null
+                            closeAt: { $exists: false }, // atau closeAt: null,
+                            status: "OPEN"
                         }
                     ]
                 })
@@ -156,7 +158,7 @@ const startWatcher = async () => {
                 if (tmpCashier && doc.status === "CLOSE") {
                     // Cek apakah item dengan id dan addOns yang sama sudah ada
                     // ✅ Jika sudah ada, update qty dan totalHarga
-                    console.log(`✅ Update transaction ${doc.client?.name} records into 'Cashier'`);
+                    console.log(`✅ Update transaction ${doc.client?.name} records into ${tmpCashier._id}`);
 
                     await cashier.updateOne(
                         {

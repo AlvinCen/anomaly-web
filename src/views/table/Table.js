@@ -164,13 +164,19 @@ const Table = () => {
 
         harga = isNaN(harga) ? 0 : harga
 
-        harga += table?.item?.reduce((total, item) => {
+        harga += (table?.splitBill !== undefined && table?.status === "PAYMENT" ? table?.unpaidItems : table?.item)?.reduce((total, item) => {
             const totalAddOn = item?.addOns
                 ? item.addOns.reduce((total1, item1) => total1 + Number(item1.harga), 0)
                 : 0;
+
+
             if (item?.addOns && !item?.tipe) {
                 const itemTotal = (Number(item.harga) + totalAddOn) * item.qty;
-                return total + itemTotal;
+                if (table?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF")) {
+                    return total + itemTotal;
+                } else if (item?.payAt === undefined || item?.isPay === undefined || !item?.isPay) {
+                    return total
+                }
             } else return total
         }, 0);
 
@@ -213,7 +219,8 @@ const Table = () => {
         var boardGame = table?.item?.reduce((total, item) => {
             if (!item?.addOns) {
                 if (item?.tipe === "durasi" && item?.duration === "00:00") return total
-                else return total + (Number(item.harga) * Number(item.qty));
+                else if ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF") return total + (Number(item.harga) * Number(item.qty));
+                else return total
             } else return total
 
         }, 0);
@@ -226,7 +233,7 @@ const Table = () => {
             }, 0) : 0
             return total + totalAddOn + Number(item.harga * item.qty);
         }, 0)
-        orderTotal += table?.item?.reduce((total, item) => {
+        orderTotal += (table?.splitBill !== undefined && table?.status === "PAYMENT" ? table?.unpaidItems : table?.item)?.reduce((total, item) => {
             // if (item?.isPromo && table?.status !== "AKTIF") {
             //     return total
             // }
@@ -242,7 +249,11 @@ const Table = () => {
             // Calculate item total with tax and service if add-ons are present
             if (!item?.tipe && item?.addOns) {
                 const itemTotal = (Number(item.harga) + totalAddOn) * item.qty;
-                return total + itemTotal;
+                if (table?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF")) {
+                    return total + itemTotal;
+                } else {
+                    return total
+                }
             } else return total
             // }
             // return item?.addOns
@@ -270,11 +281,12 @@ const Table = () => {
 
         harga = isNaN(harga) ? 0 : harga
 
-        var boardGame = table?.item?.reduce((total, item) => {
+        var boardGame = (table?.splitBill !== undefined && table?.status === "PAYMENT" ? table?.unpaidItems : table?.item)?.reduce((total, item) => {
 
             if (!item?.addOns) {
                 if (item?.tipe === "durasi" && item?.duration === "00:00") return total
-                else return total + (Number(item.harga) * Number(item.qty));
+                else if (table?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF")) return total + (Number(item.harga) * Number(item.qty));
+                else return total
             } else return total
 
         }, 0);
@@ -286,7 +298,7 @@ const Table = () => {
             }, 0) : 0
             return total + totalAddOn + Number(item.harga * item.qty);
         }, 0)
-        orderTotal += table?.item?.reduce((total, item) => {
+        orderTotal += (table?.splitBill !== undefined && table?.status === "PAYMENT" ? table?.unpaidItems : table?.item)?.reduce((total, item) => {
             // if (item?.isPromo && table?.status !== "AKTIF") {
             //     return total
             // }
@@ -296,14 +308,16 @@ const Table = () => {
                 ? item.addOns.reduce((total1, item1) => total1 + Number(item1.harga), 0)
                 : 0;
 
-            // Default tax and service values to 0 if they are undefined
-            // const tax = cafe?.tax ?? 0;
-            // const service = cafe?.service ?? 0;
-            // Calculate item total with tax and service if add-ons are present
-            if (!item?.tipe && item?.addOns) {
+
+            if (item?.addOns && !item?.tipe) {
                 const itemTotal = (Number(item.harga) + totalAddOn) * item.qty;
-                return total + itemTotal;
+                if (table?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF")) {
+                    return total + itemTotal;
+                } else if (item?.isPay === undefined || !item?.isPay) {
+                    return total
+                }
             } else return total
+
             // }
             // return item?.addOns
             //     ? total + ((Number(item.harga) + totalAddOn) * item.qty)
@@ -535,12 +549,24 @@ const Table = () => {
 
 
     const handlePrintClick = async (data, kembali) => {
+        // await api.post("/data/update", {
+        //     collection: "tableHistory",
+        //     filter: { _id: data?._id },
+        //     update: {
+        //         $push: {
+        //             paidItems: { $each: paidItems },
+        //             unpaidItems: { $each: unpaidItems }
+        //         }
+        //     }
+        // });
+        // var isPaid = data.item.every(item => item.payAt !== undefined || item.isPay);
+
         if (window?.electron) {
             const collection = "tableHistory";
             const result = await window?.electron.printReceipt({
                 data,
                 // cafe,
-                paymentMethod: (data?.tableName !== "grabfood" && data?.tableName !== "gofood") ? paymentMethod : "qris",
+                paymentMethod: ((data?.tableName === "grabfood" || data?.tableName === "gofood") && paymentMethod === "qris") ? "qris" : paymentMethod,
                 pay: inputBayar,
                 changes: kembali
             });
@@ -548,21 +574,107 @@ const Table = () => {
             if (result.success) {
                 try {
                     if (data?.status === "PAYMENT") {
-                        // ✅ Update data menggunakan API MongoDB
-                        await api.put("/data/update", {
-                            collection,
-                            filter: { _id: data?._id },
-                            update: {
-                                paymentMethod: paymentMethod,
-                                pay: Number(inputBayar),
-                                tax: isTax ? (data?.tax < 1 && data?.tax > 0 ? data?.tax : data?.tax / 100) : 0,
-                                // service: isService ? (data?.service < 1 && data?.service > 0 ? data?.service : data?.service / 100) : 0,
-                                typeDiscount,
-                                discount: isDiscount ? data?.discount : 0,
-                                status: "CLOSE"
+                        // ✅ Update data menggunakan API MongoDB       
+                        // var isPaid = data.item.every(item => item.payAt !== undefined || item.isPay);
+                        var paidItems = [];
+                        var unpaidItems = [];
+
+                        var tmpItem = (data?.splitBill !== undefined ? data?.unpaidItems : data?.item)?.map(item => {
+                            const paidQty = item?.qty;
+                            const totalQty = item?.totalQty
+                            const unpaidQty = totalQty - paidQty;
+                            if (item.isPay && item?.isPay !== undefined) {
+                                if (unpaidQty > 0) {
+                                    unpaidItems.push({
+                                        ...((({ isPay, totalQty, ...rest }) => rest)(item)),
+                                        qty: unpaidQty,
+                                    });
+
+                                    paidItems.push({
+                                        ...((({ totalQty, ...rest }) => rest)(item)),
+                                        qty: paidQty,
+                                    });
+                                } else {
+                                    paidItems.push({
+                                        ...((({ totalQty, ...rest }) => rest)(item)),
+                                        qty: paidQty,
+                                    });
+                                }
+
+                                return {
+                                    ...((({ totalQty, ...rest }) => rest)(item)),
+                                    qty: totalQty
+                                };
+                            } else {
+                                unpaidItems.push({
+                                    ...((({ isPay, ...rest }) => rest)(item)),
+                                });
+
+                                return {
+                                    ...((({ totalQty, ...rest }) => rest)(item)),
+                                    qty: totalQty
+                                };
                             }
                         });
 
+
+                        var splitBill = {
+                            item: paidItems,
+                            createdAt: moment().format(),
+                            paymentMethod,
+                            pay: Number(inputBayar),
+                            tax: isTax ? (data?.tax < 1 && data?.tax > 0 ? data?.tax : data?.tax / 100) : 0,
+                            typeDiscount,
+                            discount: isDiscount ? data?.discount : 0,
+                        }
+
+                        var isPaid = unpaidItems?.length === 0
+
+                        if (isPaid) {
+                            if (data?.splitBill !== undefined) {
+                                await api.put("/data/update", {
+                                    collection,
+                                    filter: { _id: data?._id },
+                                    update: {
+                                        $push: {
+                                            splitBill: { $each: [splitBill] }
+                                        },
+                                        $set: {
+                                            unpaidItems,
+                                            status: "CLOSE"
+                                        }
+                                    }
+                                });
+                            } else {
+                                await api.put("/data/update", {
+                                    collection,
+                                    filter: { _id: data?._id },
+                                    update: {
+                                        paymentMethod: paymentMethod,
+                                        pay: Number(inputBayar),
+                                        tax: isTax ? (data?.tax < 1 && data?.tax > 0 ? data?.tax : data?.tax / 100) : 0,
+                                        // service: isService ? (data?.service < 1 && data?.service > 0 ? data?.service : data?.service / 100) : 0,
+                                        typeDiscount,
+                                        discount: isDiscount ? data?.discount : 0,
+                                        status: "CLOSE"
+                                    }
+                                });
+                            }
+                        } else {
+                            await api.put("/data/update", {
+                                collection,
+                                filter: { _id: data?._id },
+                                update: {
+                                    $push: {
+                                        splitBill: { $each: [splitBill] }
+                                    },
+                                    $set: {
+                                        unpaidItems,
+                                    }
+                                }
+                            });
+                        }
+                        setRefresh(!refresh)
                         // // ✅ Jika ada orderId, update juga dokumen order
                         // if (collection !== "cafe" && data?.orderId) {
                         //     await api.put("/data/update", {
@@ -787,15 +899,15 @@ const Table = () => {
             if (tmpAction === "detail") {
                 // var tmpOrder = [...poolData?.item]
                 var tmpOrder = { ...poolData }
-                var orderCafe = tmpCafe.item.forEach((data, idx) => {
-                    var indexOrder = tmpOrder?.item?.findIndex((item) => item?.id === data?.id && compareAddons(item?.addOns, data?.addOns) && item?.note === data?.note)
-                    if (indexOrder !== -1) {
-                        tmpOrder.item[indexOrder].qty = (Number(tmpOrder.item[indexOrder].qty) || 0) + Number(data.qty)
-                        tmpOrder.item[indexOrder].note = tmpOrder.item[indexOrder].note || data?.note ?
-                            (data?.note ? data?.note : tmpOrder.item[indexOrder].note) : ""
-                        tmpCafe?.item.splice(idx, 1)
-                    }
-                })
+                // var orderCafe = tmpCafe.item.forEach((data, idx) => {
+                //     var indexOrder = tmpOrder?.item?.findIndex((item) => item?.id === data?.id && compareAddons(item?.addOns, data?.addOns) && item?.note === data?.note)
+                //     if (indexOrder !== -1) {
+                //         tmpOrder.item[indexOrder].qty = (Number(tmpOrder.item[indexOrder].qty) || 0) + Number(data.qty)
+                //         tmpOrder.item[indexOrder].note = tmpOrder.item[indexOrder].note || data?.note ?
+                //             (data?.note ? data?.note : tmpOrder.item[indexOrder].note) : ""
+                //         tmpCafe?.item.splice(idx, 1)
+                //     }
+                // })
                 console.log(tmpOrder)
                 setModal(true)
                 setAction("detail")
@@ -816,6 +928,7 @@ const Table = () => {
 
 
     useEffect(() => {
+        console.log(action)
         if (action === "edit") {
             // setHarga(edit?.harga)
             // // console.log(edit?.hargaVoid)
@@ -839,6 +952,19 @@ const Table = () => {
             setClient({ ...detail?.client, ...tmpClient })
             setNomor(detail?.client?.nomor)
             setMeja(data?.find((table) => table.status === "KOSONG")?._id)
+        } else if (action === "pay") {
+            if (detail?.splitBill !== undefined) {
+                var tmpItem = detail?.unpaidItems?.map((data) => {
+                    return { ...data, isPay: true }
+                })
+                setDetail({ ...detail, unpaidItems: tmpItem })
+            } else {
+                var tmpItem = detail?.item?.map((data) => {
+                    return { ...data, isPay: true }
+                })
+                setDetail({ ...detail, item: tmpItem })
+            }
+
         }
     }, [action])
 
@@ -1193,13 +1319,15 @@ const Table = () => {
             start: detail?.start,
             cashier: currentUser?.name,
             item: detail?.item,
+            unpaidItems: detail?.unpaidItems,
+            splitBill: detail?.splitBill,
             tax: detail?.tax,
             // service: detail?.service,
             discount: Number(detail?.discount),
             typeDiscount: detail?.typeDiscount,
             status: "AKTIF"
         };
-        console.log(meja)
+        console.log(detail)
         console.log(dataForm)
         try {
             await api.put("/data/update", {
@@ -1519,6 +1647,7 @@ const Table = () => {
         table.table = table.name;
         table.end = table?.end !== "" && moment().isAfter(table?.end) ? table?.end : moment().format();
         table.harga = harga - item;
+        var unpaidItems = syncUnpaidItems(table);
 
         const updatedItems = table.item.map((item) => {
             if (item.tipe === "durasi" && item.duration === "00:00") {
@@ -1541,6 +1670,7 @@ const Table = () => {
                 update: {
                     orderId: table?.orderId || "",
                     item: updatedItems,
+                    unpaidItems,
                     harga: table?.harga,
                     table: table?.id,
                     pauseTimes: table?.pauseTimes || [],
@@ -1571,7 +1701,7 @@ const Table = () => {
             await api.put("/data/update", {
                 collection: "table",
                 filter: { _id: table._id },
-                update: dataForm
+                update: { $set: dataForm, $unset: { unpaidItems: 1, splitBill: 1 } }
             });
         } catch (error) {
             console.error('Error updating data: ', error);
@@ -1579,7 +1709,6 @@ const Table = () => {
         setRefresh(!refresh)
         setVisible(false);
         setLoading(false);
-        (false);
     };
 
 
@@ -1855,6 +1984,7 @@ const Table = () => {
         // var tmpMerch = [...merch]
         var end = ""
         var tmpDetail = Object.keys(detail).length > 0 ? detail : edit
+        var newItem = []
         // console.log(tmpDetail)
         // console.log(edit)
         const playItem = tmpDetail?.item ? tmpDetail?.item?.filter(item => item?.tipe !== undefined) : [];
@@ -1885,9 +2015,6 @@ const Table = () => {
                         delete tmpItem[key];
                     }
                 });
-
-                console.log(tmpItem)
-
                 delete tmpItem.isNew
                 delete tmpItem.isEdit
                 if (tmpItem.name && tmpItem.name.label) {
@@ -1897,19 +2024,29 @@ const Table = () => {
                 // tmpItem.id = tmpItem?.value;
                 delete tmpItem.label
                 delete tmpItem.value
-
-                // // console.log(index)
-                // if (index !== -1) {
-                //     if (tmpData?.item[idx]?.qty) {
-                //         if (Math.sign(Number(tmpData?.item[idx]?.qty) - Number(tmpItem.qty)) === -1) tmpMerch[index].stok = Number(tmpMerch[index]?.stok) - (Number(tmpItem.qty) - Number(tmpData?.item[idx]?.qty))
-                //         else if (Math.sign(Number(tmpData?.item[idx]?.qty) - Number(tmpItem.qty)) === 1) tmpMerch[index].stok = Number(tmpMerch[index]?.stok) + (Number(tmpData?.item[idx]?.qty) - Number(tmpItem.qty))
-                //     } else {
-                //         // // console.log(Number(tmpMerch[index]?.stok) - Number(tmpItem.qty))
-                //         tmpMerch[index].stok = Number(tmpMerch[index]?.stok) - Number(tmpItem.qty)
+                // if (tmpItem?.isNew) {
+                //     delete tmpItem.isNew
+                //     delete tmpItem.isEdit
+                //     if (tmpItem.name && tmpItem.name.label) {
+                //         tmpItem.name = tmpItem.name.label.split("(")[0];
                 //     }
+                //     if (tmpItem.id === undefined) tmpItem.id = tmpItem?.value;
+                //     // tmpItem.id = tmpItem?.value;
+                //     delete tmpItem.label
+                //     delete tmpItem.value
+                //     newItem.push(tmpItem)
+                // } else {
+                //     delete tmpItem.isNew
+                //     delete tmpItem.isEdit
+                //     if (tmpItem.name && tmpItem.name.label) {
+                //         tmpItem.name = tmpItem.name.label.split("(")[0];
+                //     }
+                //     if (tmpItem.id === undefined) tmpItem.id = tmpItem?.value;
+                //     // tmpItem.id = tmpItem?.value;
+                //     delete tmpItem.label
+                //     delete tmpItem.value
                 // }
-                // else if () {
-                //     }
+
                 return tmpItem;
             }) : [];
         if (tmpCafe?.item.length > 0) {
@@ -1919,7 +2056,8 @@ const Table = () => {
             })
             // tmpOrder.push(...tmpCafe?.item)
         }
-
+        tmpDetail.item = tmpOrder
+        var unpaidItems = syncUnpaidItems(tmpDetail)
         // // console.log(tmpMerch)
         // console.log(detail)
         // console.log(detail)
@@ -1940,7 +2078,6 @@ const Table = () => {
             if (jam > 0 || menit > 0)
                 end = moment(tmpDetail?.start ? tmpDetail?.start : moment()).add(jam, "hours").add(menit, "minutes").format()
         }
-
         if (tmpDetail?.orderId) {
             const dataOrder = {
                 item: tmpOrder.filter((item) => !item?.isPromo && !item?.addOns),
@@ -1970,19 +2107,37 @@ const Table = () => {
                     });
                 }
 
-                await api.put("/data/update", {
-                    collection: "tableHistory",
-                    filter: { _id: tmpDetail?.orderId },
-                    update: {
-                        discount: isDiscount ? Number(tmpDetail?.discount) : 0,
-                        tax: isTax ? Number(tmpDetail?.tax) : 0,
-                        typeDiscount,
-                        orderAt: tmpOrder.some((item) => item?.addOns) ? moment().format() : "",
-                        start: isPlay ? (isNew ? moment().format().toString() : tmpDetail?.start) : "",
-                        end: end,
-                        item: tmpOrder
-                    }
-                });
+                if (tmpDetail?.splitBill !== undefined) {
+                    await api.put("/data/update", {
+                        collection: "tableHistory",
+                        filter: { _id: tmpDetail?.orderId },
+                        update: {
+                            discount: isDiscount ? Number(tmpDetail?.discount) : 0,
+                            tax: isTax ? Number(tmpDetail?.tax) : 0,
+                            typeDiscount,
+                            orderAt: tmpOrder.some((item) => item?.addOns) ? moment().format() : "",
+                            start: isPlay ? (isNew ? moment().format().toString() : tmpDetail?.start) : "",
+                            end: end,
+                            item: tmpOrder,
+                            unpaidItems,
+                        }
+                    });
+                } else {
+                    await api.put("/data/update", {
+                        collection: "tableHistory",
+                        filter: { _id: tmpDetail?.orderId },
+                        update: {
+                            discount: isDiscount ? Number(tmpDetail?.discount) : 0,
+                            tax: isTax ? Number(tmpDetail?.tax) : 0,
+                            typeDiscount,
+                            orderAt: tmpOrder.some((item) => item?.addOns) ? moment().format() : "",
+                            start: isPlay ? (isNew ? moment().format().toString() : tmpDetail?.start) : "",
+                            end: end,
+                            item: tmpOrder,
+                        }
+                    });
+                }
+
 
                 // for (let item of merch) {
                 //     await api.put("/data/update", {
@@ -2069,223 +2224,88 @@ const Table = () => {
         setModal(false)
         // }
     }
+    function syncUnpaidItems(orderData) {
+        const allItems = orderData.item || [];
+        const splitItems = (orderData.splitBill || []).flatMap(split => split.item || []);
 
-    const updatePerItem = async (e, idx) => {
-        e.preventDefault();
-        setLoading(true)
-        const total = detail?.item?.reduce((total, item) => {
-            return total + Number(item.harga * item.qty);
-        }, 0)
-
-        var tmpMerch = [...merch]
-
-        // const tmpOrder = detail?.item
-        //     .filter(item => item.harga && item.name)
-        //     .map(item => {
-        //         var tmpItem = { ...item }
-        //         delete tmpItem.isNew
-        //         delete tmpItem.isEdit
-        //         tmpItem.name = tmpItem?.name?.label;
-        //         return tmpItem;
-        //     });
-        var tmpOrder = { ...detail }
-        delete tmpOrder.item[idx].isEdit
-        delete tmpOrder.item[idx].isNew
-        tmpOrder.item[idx] = {
-            ...tmpOrder.item[idx],
-            name: tmpOrder?.item[idx]?.name?.value,
-            harga: tmpOrder?.item[idx]?.name?.harga,
-        };
-        var tmpData = data.find(table => table.id === detail?.id)
-        var index = tmpMerch.findIndex(data => data.id === tmpOrder.item[idx].id);
-        if (index !== -1) {
-            // // console.log(tmpMerch[index].stok)
-            if (Math.sign(Number(tmpData?.item[idx]?.qty) - Number(tmpOrder.item[idx].qty)) === -1) tmpMerch[index].stok = Number(tmpMerch[index]?.stok) - (Number(tmpOrder.item[idx].qty) - Number(tmpData?.item[idx]?.qty))
-            else if (Math.sign(Number(tmpData?.item[idx]?.qty) - Number(tmpOrder.item[idx].qty)) === 1) tmpMerch[index].stok = Number(tmpMerch[index]?.stok) + (Number(tmpData?.item[idx]?.qty) - Number(tmpOrder.item[idx].qty))
-            // else tmpMerch.stok = Number(tmpMerch?.stok) + Number(tmpItem.qty)
+        // Hitung total qty untuk setiap item+createdAt di splitBill
+        const paidItemMap = new Map();
+        for (const item of splitItems) {
+            const key = `${item.id}_${item.createdAt}`;
+            const prevQty = paidItemMap.get(key) || 0;
+            paidItemMap.set(key, prevQty + item.qty);
         }
-        // // console.log(tmpOrder)
-        var orderItem = tmpOrder.item.filter((item) => !item?.isPromo && !item?.addOns)
-        const dataOrder = {
-            item: orderItem,
-            total: total,
-        }
-        if (tmpOrder.item[idx]?.tipe) {
-            const [jam, menit] = tmpOrder?.item[idx]?.duration?.split(':').map(Number);
-            const totalMinutes = (jam * 60) + menit;
 
-            const multipliedMinutes = totalMinutes * tmpOrder?.item[idx]?.qty;
+        // Buat unpaidItems baru berdasarkan pengurangan qty dari item aslinya
+        const unpaidItems = [];
 
-            const totalJam = Math.floor(multipliedMinutes / 60);
-            const totalMenit = multipliedMinutes % 60;
-            var end = moment(detail?.start).add(totalJam, "hours").add(totalMenit, "minutes").format()
-            try {
-                await api.put("/data/update", {
-                    collection: "table",
-                    filter: { _id: detail?.id },
-                    update: {
-                        end: end,
-                        item: tmpOrder.item
-                    }
-                });
-                Swal.fire({
-                    title: "Updated!",
-                    text: "Data berhasil diperbarui",
-                    icon: "success"
-                });
-            } catch (err) {
-                // console.log(err)
-                Swal.fire({
-                    title: "Error!",
-                    text: "Data gagal diperbarui",
-                    icon: "error"
+        for (const item of allItems) {
+            const key = `${item.id}_${item.createdAt}`;
+            const paidQty = paidItemMap.get(key) || 0;
+            const unpaidQty = item.qty - paidQty;
+
+            if (unpaidQty > 0) {
+                unpaidItems.push({
+                    ...item,
+                    qty: unpaidQty
                 });
             }
-        } else {
-            if (detail?.orderId) {
-                try {
-
-                    // var bookingId = action === "edit" ? detail?.id : detail?.bookingId;
-                    // await api.put("/data/update", {
-                    //     collection: "order",
-                    //     filter: { _id: detail?.orderId },
-                    //     update: dataOrder
-                    // });
-
-                    if (action !== "edit") {
-                        await api.put("/data/update", {
-                            collection: "table",
-                            filter: { _id: detail?.id },
-                            update: { item: tmpOrder?.item }
-                        });
-                    }
-
-                    await api.put("/data/update", {
-                        collection: "tableHistory",
-                        filter: { _id: orderId },
-                        update: { item: tmpOrder?.item }
-                    });
-
-                    // for (let item of merch) {
-                    //     await api.put("/data/update", {
-                    //         collection: "merchandise",
-                    //         filter: { _id: item.id },
-                    //         update: { stok: item.stok }
-                    //     });
-                    // }
-                    Swal.fire({ title: "Updated!", text: "Data berhasil diperbarui", icon: "success" });
-
-                } catch (err) {
-                    console.error('Error menambahkan data: ', err);
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Data gagal diperbarui",
-                        icon: "error"
-                    });
-                }
-            } else {
-                const dataOrder = {
-                    client: detail?.client,
-                    table: detail?.table ? detail?.table : detail?.id,
-                    item: orderItem,
-                    total: total,
-                    createdAt: moment().format().toString(),
-                    status: "PAYMENT"
-                }
-                // // console.log(dataOrder)
-                try {
-                    // var bookingId = action === "edit" ? detail?.id : detail?.bookingId;
-                    // const orderResponse = await api.post("/data/add", {
-                    //     collection: "order",
-                    //     data: dataOrder
-                    // });
-
-                    const orderId = ""
-                    if (orderId) {
-                        if (action !== "edit") {
-                            await api.put("/data/update", {
-                                collection: "table",
-                                filter: { _id: detail?.id },
-                                update: { item: tmpOrder?.item, orderId: orderId }
-                            });
-                        }
-                        else {
-                            await api.put("/data/update", {
-                                collection: "tableHistory",
-                                filter: { _id: orderId },
-                                update: { item: tmpOrder?.item, orderId: orderId }
-                            });
-
-                        }
-                    }
-
-                    // for (let item of merch) {
-                    //     await api.put("/data/update", {
-                    //         collection: "merchandise",
-                    //         filter: { _id: item.id },
-                    //         update: { stok: item.stok }
-                    //     });
-                    // }
-                    Swal.fire({ title: "Updated!", text: "Data berhasil diperbarui", icon: "success" });
-                } catch (err) {
-                    console.error('Error menambahkan data: ', err);
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Data gagal diperbarui",
-                        icon: "error"
-                    });
-                }
-            }
-
         }
-        setRefresh(!refresh)
-        setModal(false)
-        setVisible(false)
-        setLoading(false)
-            (false)
+
+        console.log(unpaidItems)
+
+        // Return hasil update unpaidItems
+        return unpaidItems;
     }
+    const mergeData = (arr1, arr2) => {
+        const map = new Map();
 
-    const cancelBooking = (data) => {
-        // console.log(data)
-        setLoading(true)
-        Swal.fire({
-            title: "Konfirmasi",
-            html: `<p>Apakah anda yakin membatalkan booking atas nama <b>${data?.client?.name}</b>?</p>`,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Ya",
-            cancelButtonText: "Batal"
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const data = { client: value }
-                    await api.put("/data/update", {
-                        collection: "tableHistory",
-                        filter: { _id: data?._id },
-                        update: {
-                            status: "CANCEL"
-                        }
-                    });
-                    setRefresh(!refresh)
-                    Swal.fire({
-                        title: "Updated!",
-                        text: "Data berhasil diperbarui",
-                        icon: "success"
-                    });
-                } catch (err) {
-                    // console.log(err)
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Data gagal diperbarui",
-                        icon: "error"
-                    });
-                }
+        [...arr1, ...arr2].forEach(item => {
+            const key = item.id;
+            if (map.has(key)) {
+                const existing = map.get(key);
+                map.set(key, {
+                    ...existing,
+                    qty: (existing.qty || 0) + (item.qty || 0)
+                });
+            } else {
+                map.set(key, { ...item }); // clone biar gak mutasi original
             }
         });
-        setLoading(false)
-    }
+
+        return Array.from(map.values());
+    };
+
+    const handleDecrease = (idx, item) => {
+        var tmpQty = item?.qty
+        if (item?.qty > 1) {
+            var tmpOrder = { ...detail }
+            if (tmpOrder?.splitBill !== undefined) {
+                if (item?.totalQty === undefined) tmpOrder.unpaidItems[idx] = { ...tmpOrder.unpaidItems[idx], totalQty: Number(tmpQty), qty: Number(item?.qty) - 1 };
+                else tmpOrder.unpaidItems[idx] = { ...tmpOrder.unpaidItems[idx], qty: Number(item?.qty) - 1 };
+            }
+            else {
+                if (item?.totalQty === undefined) tmpOrder.item[idx] = { ...tmpOrder.item[idx], totalQty: Number(tmpQty), qty: Number(item?.qty) - 1 };
+                else tmpOrder.item[idx] = { ...tmpOrder.item[idx], qty: Number(item?.qty) - 1 };
+            }
+            setDetail(tmpOrder)
+        }
+    };
+
+    const handleIncrease = (idx, item) => {
+        var tmpOrder = { ...detail }
+        // var totalQty = item?.totalQty !== undefined ? item?.totalQty : tmpOrder?.unpaidItems?.find((data) => data?.id === item?.id)?.qty
+        var totalQty = item?.totalQty
+        const newValue = item?.qty + 1;
+        if (item?.qty < totalQty) {
+            if (tmpOrder?.splitBill !== undefined) {
+                tmpOrder.unpaidItems[idx] = { ...tmpOrder.unpaidItems[idx], qty: newValue };
+            }
+            else
+                tmpOrder.item[idx] = { ...tmpOrder.item[idx], qty: newValue };
+            setDetail(tmpOrder)
+        }
+    };
 
     const titleCase = (str) => {
         if (str !== "" && str) {
@@ -3167,10 +3187,10 @@ const Table = () => {
                                             <b>Discount</b></CTableDataCell>
                                         <CTableDataCell>
                                             <CInputGroup>
-                                                {!typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                     Rp.</span>}
                                                 <CFormInput type='text' value={formatNumber(edit?.discount)} onChange={(e) => { setEdit({ ...edit, discount: e.target.value.replace(/,/g, "") }) }} disabled={!isDiscount} />
-                                                {typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                     %</span>}
                                             </CInputGroup>
 
@@ -4281,10 +4301,10 @@ const Table = () => {
                                                 <b>Discount</b></CTableDataCell>
                                             <CTableDataCell>
                                                 <CInputGroup>
-                                                    {!typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                    {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         Rp.</span>}
                                                     <CFormInput type='text' value={formatNumber(10)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
-                                                    {typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                    {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         %</span>}
                                                 </CInputGroup>
                                             </CTableDataCell>
@@ -4616,9 +4636,10 @@ const Table = () => {
                         <CTable>
                             <CTableHead>
                                 <CTableRow>
+                                    {(action !== "detail" && (detail?.status === "PAYMENT")) && <CTableHeaderCell style={{ width: "100px" }}>Pay</CTableHeaderCell>}
                                     {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
                                     {detail?.status === "AKTIF" && <CTableHeaderCell style={{ width: "100px" }}>Print</CTableHeaderCell>}
-                                    <CTableHeaderCell style={{ width: "100px" }}>Qty</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ width: detail?.status === "PAYMENT" ? "140px" : "100px" }}>Qty</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "400px" }}>Item</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "200px" }}>Harga</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "200px" }}>Sub Total</CTableHeaderCell>
@@ -4638,7 +4659,7 @@ const Table = () => {
                                                 // else if (action === "pay") harga = formatNumber(detail?.harga)
                                                 : formatNumber(hitungHarga(detail, detail?.start, detail?.end, detail?.rate, detail?.rate1))}</CTableDataCell>
                                     </CTableRow>}
-                                {detail?.item?.map((item, idx) => {
+                                {(detail?.splitBill !== undefined ? detail?.unpaidItems : detail?.item)?.map((item, idx) => {
                                     var itemCafe = item.hasOwnProperty("addOns")
                                     var totalAddOn = itemCafe ? item?.addOns?.reduce((total1, item1) => {
                                         return total1 + Number(item1.harga);
@@ -4655,6 +4676,20 @@ const Table = () => {
                                     // var grandTotal = (orderTotal ? orderTotal : 0) + boardGame
                                     return (
                                         <CTableRow key={idx}>
+                                            {(action !== "detail") && <CTableDataCell>
+                                                <CFormCheck id={`pay-${idx}`}
+                                                    checked={item?.isPay}
+                                                    onChange={(e) => {
+                                                        var tmpItem = { ...detail }
+                                                        if (tmpItem?.splitBill !== undefined) {
+                                                            tmpItem.unpaidItems[idx].isPay = e.target.checked
+                                                        } else {
+                                                            tmpItem.item[idx].isPay = e.target.checked
+                                                        }
+                                                        console.log(tmpItem)
+                                                        setDetail(tmpItem)
+                                                    }}
+                                                /></CTableDataCell>}
                                             {((action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE"))) && (
                                                 <CTableDataCell>
                                                     {(item?.isNew || item?.isEdit) && (
@@ -4717,13 +4752,15 @@ const Table = () => {
                                                                     setDetail(tmpItem)
                                                                 }}
                                                             /></CTableDataCell>}
-                                                        <CTableDataCell><CFormInput type="number" min={1} value={item?.qty} onChange={(e) => {
-                                                            var tmpOrder = { ...detail }
-                                                            // console.log(e.target.value)
-                                                            console.log(item)
-                                                            tmpOrder.item[idx] = { ...tmpOrder.item[idx], qty: e.target.value };
-                                                            setDetail(tmpOrder)
-                                                        }} /></CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <CFormInput type="number" min={1} value={item?.qty} onChange={(e) => {
+                                                                var tmpOrder = { ...detail }
+                                                                // console.log(e.target.value)
+                                                                console.log(item)
+                                                                tmpOrder.item[idx] = { ...tmpOrder.item[idx], qty: e.target.value };
+                                                                setDetail(tmpOrder)
+                                                            }} />
+                                                        </CTableDataCell>
                                                         <CTableDataCell>
                                                             {!itemCafe ? <ReactSelectAsync
                                                                 defaultOptions
@@ -4790,7 +4827,19 @@ const Table = () => {
                                                                     setDetail(tmpItem)
                                                                 }}
                                                             /></CTableDataCell>}
-                                                        <CTableDataCell>{item?.qty}x</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {detail?.status === "PAYMENT" ? <CInputGroup>
+                                                                <CButton onClick={() => handleDecrease(idx, item)} color="danger"><b>-</b></CButton>
+                                                                <CFormInput
+                                                                    type="number"
+                                                                    value={item?.qty}
+                                                                    readOnly
+                                                                    min={1}
+                                                                    max={item?.qty}
+                                                                />
+                                                                <CButton value={item?.qty} onClick={(e) => handleIncrease(idx, item)} color="success"><b>+</b></CButton>
+                                                            </CInputGroup>
+                                                                : `${item?.qty}x`}</CTableDataCell>
                                                         <CTableDataCell>
                                                             {item?.name}
                                                             {item?.addOns && item?.addOns?.length > 0 && (
@@ -4825,6 +4874,7 @@ const Table = () => {
                                         </CTableRow>
                                     )
                                 })}
+
                                 {
                                     tmpCafe?.item.map((item, idx) => {
                                         var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
@@ -4886,6 +4936,215 @@ const Table = () => {
                                         )
                                     })
                                 }
+                                {detail?.splitBill !== undefined && detail?.splitBill?.map((transaction, idxTx) => {
+                                    var element = []
+                                    element.push(<CTableHeaderCell colSpan={5}>Transaction - {idxTx + 1} {`(${transaction?.paymentMethod?.toUpperCase()} ${moment(transaction?.createdAt).format("DD MMMM YYYY  HH:mm:ss").toString()})`}</CTableHeaderCell>)
+                                    element.push(transaction?.item?.map((item, idx) => {
+                                        var itemCafe = item.hasOwnProperty("addOns")
+                                        var totalAddOn = itemCafe ? item?.addOns?.reduce((total1, item1) => {
+                                            return total1 + Number(item1.harga);
+                                        }, 0) : 0
+                                        var subTotal = ((Number(item?.harga) + Number(itemCafe ? totalAddOn : 0)) * (item?.qty ? item?.qty : 1))
+
+                                        var orderTotal = tmpCafe?.item.reduce((total, item) => {
+                                            var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                                                return total1 + Number(item1.harga);
+                                            }, 0) : 0
+                                            return total + totalAddOn + Number(item.harga * item.qty);
+                                        }, 0)
+                                        // var boardGame = Number(item?.harga ? item?.harga : 0) * Number(item?.qty ? item?.qty : 1)
+                                        // var grandTotal = (orderTotal ? orderTotal : 0) + boardGame
+                                        return (
+                                            <>
+                                                <CTableRow key={idx}>
+
+                                                    {detail?.status !== "CLOSE" && <CTableDataCell>
+                                                        <CButton color='danger' className='me-1' onClick={async () => {
+                                                            var tmpOrder = { ...detail }
+                                                            if (tmpOrder?.splitBill !== undefined) {
+                                                                // tmpOrder?.splitBill[idx]?.item?.map(async (data) => {
+                                                                //     var tmpDetail = tmpOrder?.unpaidItems.map((data1) => {
+                                                                //         if (data1?.id === data?.id) {
+                                                                //             return { ...data1, qty: Number(data1?.qty) + Number(data?.qty) }
+                                                                //         }
+                                                                //         else return { ...data1 }
+                                                                //     })
+                                                                //     // tmpOrder.unpaidItems = tmpDetail
+                                                                //     console.log(tmpDetail, "detail")
+
+                                                                // })
+                                                                // tmpOrder?.unpaidItems?.map((data) => {
+                                                                //     var tmpDetail = tmpOrder?.splitBill[idx]?.item?.map((data1) => {
+                                                                //         if (data1?.id === data?.id) {
+                                                                //             return { ...data1, qty: Number(data1?.qty) + Number(data?.qty) }
+                                                                //         }
+                                                                //         else return { ...data1 }
+                                                                //     })
+                                                                //     // tmpOrder.unpaidItems = tmpDetail
+                                                                //     console.log(tmpDetail, "detail")
+                                                                // })
+                                                                const mergedData = mergeData(tmpOrder?.unpaidItems, tmpOrder?.splitBill[idxTx]?.item)
+                                                                tmpOrder?.splitBill.splice(idxTx, 1)
+                                                                setModal(false)
+                                                                setRefresh(!refresh)
+                                                                if (tmpOrder?.splitBill.length === 0) {
+                                                                    await api.put("/data/update", {
+                                                                        collection: "tableHistory",
+                                                                        filter: { _id: tmpOrder?._id },
+                                                                        update: {
+                                                                            $unset: {
+                                                                                unpaidItems: [],
+                                                                                splitBill: []
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                } else {
+                                                                    await api.put("/data/update", {
+                                                                        collection: "tableHistory",
+                                                                        filter: { _id: tmpOrder?._id },
+                                                                        update: {
+                                                                            $set: {
+                                                                                unpaidItems: mergedData,
+                                                                                splitBill: tmpOrder?.splitBill
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }
+
+                                                            } else {
+                                                                tmpOrder?.item.splice(idx, 1)
+                                                                setDetail(tmpOrder)
+                                                            }
+                                                            // // console.log(tmpOrder)
+                                                        }}>✗</CButton>
+                                                    </CTableDataCell>}
+
+                                                    {/* {action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") && itemCafe && <CTableDataCell></CTableDataCell>} */}
+                                                    {
+                                                        item?.isNew || item?.isEdit ?
+                                                            <>
+                                                                {detail?.status === "AKTIF" && <CTableDataCell>
+                                                                    <CFormCheck id={`data-${idx}`}
+                                                                        checked={item?.statusPrint}
+                                                                        onChange={(e) => {
+                                                                            var tmpItem = { ...detail }
+                                                                            tmpItem.item[idx].statusPrint = e.target.checked
+                                                                            setDetail(tmpItem)
+                                                                        }}
+                                                                    /></CTableDataCell>}
+                                                                <CTableDataCell>
+                                                                    <CFormInput type="number" min={1} value={item?.qty} onChange={(e) => {
+                                                                        var tmpOrder = { ...detail }
+                                                                        // console.log(e.target.value)
+                                                                        console.log(item)
+                                                                        tmpOrder.item[idx] = { ...tmpOrder.item[idx], qty: e.target.value };
+                                                                        setDetail(tmpOrder)
+                                                                    }} />
+                                                                </CTableDataCell>
+                                                                <CTableDataCell>
+                                                                    {!itemCafe ? <ReactSelectAsync
+                                                                        defaultOptions
+                                                                        loadOptions={loadOption}
+                                                                        filterOption={filterOption}
+                                                                        styles={customStyles}
+                                                                        placeholder="Pilih Item"
+                                                                        value={item?.name}
+                                                                        menuPortalTarget={document.body}
+                                                                        onChange={(selected) => {
+                                                                            var tmpOrder = { ...detail };
+                                                                            const promoTime = selected?.endTime !== undefined ? { endTime: selected?.endTime, duration: selected?.duration }
+                                                                                : { duration: selected?.duration }
+                                                                            tmpOrder.item[idx] = {
+                                                                                ...tmpOrder.item[idx],
+                                                                                ...selected,
+                                                                                name: selected,
+                                                                                // harga: selected?.harga,
+                                                                                // sub: selected?.menu,
+                                                                                // isPromo: selected?.duration ? true : false,
+                                                                                // isPromo: false,
+                                                                                // id: selected?._id,
+                                                                                // ...promoTime
+                                                                            };
+                                                                            console.log(tmpOrder.item[idx])
+                                                                            setDetail(tmpOrder);
+                                                                        }}
+                                                                        formatGroupLabel={formatGroupLabel}
+                                                                        components={{
+                                                                            GroupHeading: GroupHeading,
+                                                                            Group: HideGroupChildren,
+                                                                        }}
+                                                                    /> : item?.name?.label}
+                                                                    {item?.addOns && item?.addOns?.length > 0 && (
+                                                                        <div className="mt-2">
+                                                                            <strong>Add-ons:</strong>
+                                                                            <ul className="mb-0">
+                                                                                {item.addOns.map((addon, index) => (
+                                                                                    <li key={index} className="small">
+                                                                                        {addon.name} (+Rp. {formatNumber(addon.harga)})
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                    <CInputGroup className='mt-3'> <strong style={{ marginTop: "7px", marginRight: "10px" }}>Note: </strong>
+                                                                        <CFormInput value={item?.note} onChange={(e) => {
+                                                                            var tmpItem = { ...detail }
+                                                                            tmpItem.item[idx].note = e.target.value
+                                                                            setDetail(tmpItem)
+                                                                        }}></CFormInput>
+                                                                    </CInputGroup>
+                                                                </CTableDataCell>
+                                                                <CTableDataCell><CFormInput type="text" value={formatNumber(item?.harga)} readOnly plainText /></CTableDataCell>
+                                                                <CTableDataCell><CFormInput type="text" value={formatNumber(Number(item?.harga) * (item?.qty ? Number(item?.qty) : 1))} readOnly plainText /></CTableDataCell>
+                                                            </> :
+                                                            <>
+                                                                {detail?.status === "AKTIF" && <CTableDataCell>
+                                                                    <CFormCheck id={`data-item-${idx}`}
+                                                                        checked={item?.statusPrint}
+                                                                        onChange={(e) => {
+                                                                            var tmpItem = { ...detail }
+                                                                            tmpItem.item[idx].statusPrint = e.target.checked
+                                                                            setDetail(tmpItem)
+                                                                        }}
+                                                                    /></CTableDataCell>}
+                                                                <CTableDataCell>{item?.qty}x</CTableDataCell>
+                                                                <CTableDataCell>
+                                                                    {item?.name}
+                                                                    {item?.addOns && item?.addOns?.length > 0 && (
+                                                                        <div className="mt-2">
+                                                                            <strong>Add-ons:</strong>
+                                                                            <ul className="mb-0">
+                                                                                {item.addOns.map((addon, index) => (
+                                                                                    <li key={index} className="small">
+                                                                                        {addon.name} (+Rp. {formatNumber(addon.harga)})
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                    <CInputGroup className='mt-3'> <strong style={{ marginTop: "7px", marginRight: "10px" }}>{
+                                                                        item?.tipe ? "Durasi :" : "Note :"
+                                                                    } </strong>
+                                                                        {action === "detail" && detail?.status === "AKTIF" ? <CFormInput value={item?.note} onChange={(e) => {
+                                                                            var tmpItem = { ...detail }
+                                                                            tmpItem.item[idx].note = e.target.value
+                                                                            setDetail(tmpItem)
+                                                                        }}></CFormInput> : <div style={{ marginTop: "7px", marginRight: "10px" }}>
+                                                                            {item.note}
+                                                                        </div>}
+                                                                    </CInputGroup>
+                                                                </CTableDataCell>
+                                                                <CTableDataCell>{formatNumber(item?.harga)}</CTableDataCell>
+                                                                <CTableDataCell>{formatNumber(subTotal)}</CTableDataCell>
+                                                            </>
+                                                    }
+
+                                                </CTableRow>
+                                            </>
+                                        )
+                                    }))
+                                    return element
+                                })}
                                 {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableRow>
                                     <CTableDataCell colSpan={6} ><CButton color='success' onClick={() => {
                                         var tmpOrder = { ...detail }
@@ -4895,43 +5154,13 @@ const Table = () => {
                                 </CTableRow>}
 
                                 <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : 3}><b>Total</b></CTableDataCell>
-                                    {/* <CTableDataCell>
-                                        {(() => {
-                                            let harga = 0;
-                                            var orderTotal = tmpCafe?.item.reduce((total, item) => {
-                                                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                                                    return total1 + Number(item1.harga);
-                                                }, 0) : 0
-                                                return total + totalAddOn + Number(item.harga * item.qty);
-                                            }, 0)
-                                            harga += detail?.item?.reduce((total, item) => {
-                                                const totalAddOn = item?.addOns
-                                                    ? item?.addOns?.reduce((total1, item1) => total1 + Number(item1.harga), 0)
-                                                    : 0;
-
-                                                return item?.addOns
-                                                    ? total + ((Number(item.harga) + totalAddOn) * item.qty)
-                                                    : total + (Number(item.harga) * item.qty);
-                                            }, 0);
-                                            harga += orderTotal
-                                            return formatNumber(harga);
-                                        })()}
-                                    </CTableDataCell> */}
-                                    <CTableDataCell>{formatNumber(hitungSubTotal())}</CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Total</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(detail?.splitBill !== undefined ? hitungGrandTotal() : hitungSubTotal())}</CTableDataCell>
 
                                 </CTableRow>
 
-                                {/* {(detail?.tax ?? 0) > 0 && (
-                                    <CTableRow>
-                                        <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : 3} style={{ textAlign: "right" }} >
-                                            <b>Tax ({detail?.tax * 100}%)</b>
-                                        </CTableDataCell>
-                                        <CTableDataCell>{formatNumber(hitungOrder(detail) * detail?.tax)}</CTableDataCell>
-                                    </CTableRow>
-                                )} */}
                                 <CTableRow>
-                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : 2} style={{ textAlign: "right" }} >
+                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
                                         <CFormCheck inline id="service" style={{ marginRight: "10px" }}
                                             checked={isDiscount}
                                             onChange={(e) => {
@@ -4941,10 +5170,10 @@ const Table = () => {
                                         <b>Discount</b></CTableDataCell>
                                     <CTableDataCell>
                                         <CInputGroup>
-                                            {!typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                            {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                 Rp.</span>}
                                             <CFormInput type='text' value={formatNumber(detail?.discount)} onChange={(e) => { setDetail({ ...detail, discount: e.target.value.replace(/,/g, "") }) }} disabled={!isDiscount} />
-                                            {typeDiscount && <span class="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                            {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                 %</span>}
                                         </CInputGroup>
 
@@ -4957,22 +5186,27 @@ const Table = () => {
                                             }, 0) : 0
                                             return total + totalAddOn + Number(item.harga * item.qty);
                                         }, 0)
-                                        harga += detail?.item?.reduce((total, item) => {
-                                            const totalAddOn = item?.addOns
-                                                ? item?.addOns?.reduce((total1, item1) => total1 + Number(item1.harga), 0)
-                                                : 0;
+                                        harga += (detail?.splitBill !== undefined && detail?.status === "PAYMENT" ? detail?.unpaidItems : detail?.item)?.reduce((total, item) => {
 
-                                            return item?.addOns
-                                                ? total + ((Number(item.harga) + totalAddOn) * item.qty)
-                                                : total
+                                            if (detail?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || detail?.status === "AKTIF")) {
+                                                const totalAddOn = item?.addOns
+                                                    ? item?.addOns?.reduce((total1, item1) => total1 + Number(item1.harga), 0)
+                                                    : 0;
+
+                                                return item?.addOns
+                                                    ? total + ((Number(item.harga) + totalAddOn) * item.qty)
+                                                    : total
+                                            } else
+                                                return total
                                         }, 0);
+
                                         harga += orderTotal
                                         var diskon = isDiscount ? (typeDiscount ? (harga * detail?.discount / 100) : detail?.discount) : 0
                                         return formatNumber(diskon);
                                     })()}</CTableDataCell>
                                 </CTableRow>
                                 <CTableRow>
-                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : 3} style={{ textAlign: "right" }} >
+                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)} style={{ textAlign: "right" }} >
                                         <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
                                             checked={isTax}
                                             onChange={(e) => {
@@ -5027,11 +5261,11 @@ const Table = () => {
 
 
                                 <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : 3}><b>Grand Total</b></CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Grand Total</b></CTableDataCell>
                                     <CTableDataCell>{formatNumber(hitungGrandTotal())}</CTableDataCell>
                                 </CTableRow>
                                 {detail?.status === "PAYMENT" && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Total Bayar</b></CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Total Bayar</b></CTableDataCell>
                                     <CTableDataCell>
                                         <CFormInput type="text"
                                             placeholder="Input Total Bayar"
@@ -5043,17 +5277,17 @@ const Table = () => {
                                         />
                                     </CTableDataCell>
                                 </CTableRow>}
-                                {(detail?.paymentMethod !== "" && detail?.pay) && <CTableRow>
+                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
                                     <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>{titleCase(detail?.paymentMethod)}</b></CTableDataCell>
                                     <CTableDataCell>
                                         <b>{formatNumber(detail?.pay)}</b>
                                     </CTableDataCell>
                                 </CTableRow>}
                                 {(detail?.status === "PAYMENT") && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Kembali</b></CTableDataCell>
                                     <CTableDataCell>{formatNumber(Math.max(0, inputBayar - hitungGrandTotal()))}</CTableDataCell>
                                 </CTableRow>}
-                                {(detail?.paymentMethod !== "" && detail?.pay) && <CTableRow>
+                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
                                     <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
                                     <CTableDataCell>{formatNumber(Math.max(0, detail?.pay - hitungGrandTotal()))}</CTableDataCell>
                                 </CTableRow>}

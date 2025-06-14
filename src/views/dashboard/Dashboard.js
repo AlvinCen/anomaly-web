@@ -50,6 +50,7 @@ import Cashier from './Cashier'
 import Report from './Report'
 import { useNavigate } from 'react-router-dom'
 import Attendance from './Attendance'
+import AdminReport from './AdminReport'
 
 const Dashboard = () => {
   const { currentUser } = useAuth()
@@ -63,11 +64,11 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* {
+      {
         currentUser?.role === "superadmin" ? <Report /> :
-          <Attendance />
-      } */}
-      <Report />
+          <AdminReport />
+      }
+      {/* <Report /> */}
     </>
   )
 }

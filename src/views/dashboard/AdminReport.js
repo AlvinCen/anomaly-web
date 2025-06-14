@@ -91,7 +91,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DoughnutChartQty from '../../components/DoughnutChart'
 import { exportProduct, exportStorage } from '../../components/ExportExcel'
 
-const Report = () => {
+const AdminReport = () => {
   const { currentUser } = useAuth();
 
   const [isLoading,] = useState(false)
@@ -1924,153 +1924,6 @@ const Report = () => {
       }
     >
       {!loadingInit ? <>
-        <CCard className="mb-4">
-          <CCardBody>
-            <CRow>
-              <CCol sm={5}>
-                <h4 id="traffic" className="card-title mb-0">
-                  Detail Revenue
-                </h4>
-                {/* <div className="small text-body-secondary">{moment(startDate).format("DD MMMM YYYY")} - {moment(endDate).format("DD MMMM YYYY")}</div> */}
-              </CCol>
-              <CCol sm={7}>
-                <CButtonGroup className="float-end me-3 mb-2">
-                  {['Day', 'Month'].map((value) => (
-                    <CButton
-                      color="outline-secondary"
-                      key={value}
-                      className="mx-0"
-                      onClick={() => setActiveBtn(value)}
-                      active={value === activeBtn}
-                    >
-                      {value}
-                    </CButton>
-                  ))}
-                </CButtonGroup>
-                <CInputGroup>
-                  {activeBtn === "Day" && <>
-                    <CFormInput
-                      type="date"
-                      className='mb-3'
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      placeholder="Start Date"
-                      aria-label="Start Date"
-                    />
-                    <CInputGroupText className='mb-3'
-                    >~</CInputGroupText>
-                    <CFormInput
-                      type="date"
-                      className='mb-3'
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      placeholder="End Date"
-                      aria-label="End Date"
-                    />
-                    <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartDate(""); setEndDate("") }}><b>x</b></CInputGroupText>
-                  </>}
-                  {activeBtn === "Month" && <>
-                    <CFormSelect
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      style={{ height: "38px" }}
-                    >
-                      <option value="">Pilih Bulan</option>
-                      <option value="January">January</option>
-                      <option value="February">February</option>
-                      <option value="March">March</option>
-                      <option value="April">April</option>
-                      <option value="May">May</option>
-                      <option value="June">June</option>
-                      <option value="July">July</option>
-                      <option value="August">August</option>
-                      <option value="September">September</option>
-                      <option value="October">October</option>
-                      <option value="November">November</option>
-                      <option value="December">December</option>
-                    </CFormSelect>
-                    <CInputGroupText className='mb-3'
-                    >~</CInputGroupText>
-                    <CFormSelect
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      style={{ height: "38px" }}
-                    >
-                      <option value="">Pilih Bulan</option>
-                      <option value="January">January</option>
-                      <option value="February">February</option>
-                      <option value="March">March</option>
-                      <option value="April">April</option>
-                      <option value="May">May</option>
-                      <option value="June">June</option>
-                      <option value="July">July</option>
-                      <option value="August">August</option>
-                      <option value="September">September</option>
-                      <option value="October">October</option>
-                      <option value="November">November</option>
-                      <option value="December">December</option>
-                    </CFormSelect>
-                    <CInputGroupText className="mb-3 close-btn" style={{ backgroundColor: "#e74c3c", color: "white", border: "none", cursor: "pointer" }} onClick={() => { setStartDate(""); setEndDate("") }}><b>x</b></CInputGroupText>
-                  </>}
-                </CInputGroup>
-              </CCol>
-            </CRow>
-            {/* <MainChart activeBtn={activeBtn} data={data} startDate={startDate} endDate={endDate} /> */}
-          </CCardBody>
-          <CCardFooter>
-            <CRow>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="success"
-                  icon={<CIcon icon={cilCash} height={24} />}
-                  title="Net Sales"
-                  value={`Rp. ${formatNumber(net)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="success"
-                  icon={<CIcon icon={cilCash} height={24} />}
-                  title="Gross Sales"
-                  value={`Rp. ${formatNumber(gross)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="info"
-                  icon={<FontAwesomeIcon icon={faDice} />}
-                  title="Net Board Game Revenue"
-                  value={`Rp. ${formatNumber(table)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="primary"
-                  icon={<CIcon icon={cilCoffee} height={24} />}
-                  title="Gross Cafe Revenue"
-                  value={`Rp. ${formatNumber(cafe)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="warning"
-                  icon={<FontAwesomeIcon icon={faPercent} />}
-                  title="Sales Discount"
-                  value={`Rp. ${formatNumber(discount)}`} />
-              </CCol>
-              <CCol xs={12} md={6}>
-                <CWidgetStatsF
-                  className="mb-3"
-                  color="danger"
-                  icon={<FontAwesomeIcon icon={faAnchor} />}
-                  title="Sales PB1"
-                  value={`Rp. ${formatNumber(tax)}`} />
-              </CCol>
-            </CRow>
-          </CCardFooter>
-        </CCard>
-
         <CRow>
           <CCol xs>
             {error && <CAlert color="danger">{error}</CAlert>}
@@ -2395,4 +2248,4 @@ const Report = () => {
   )
 }
 
-export default Report
+export default AdminReport

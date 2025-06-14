@@ -11,13 +11,13 @@ import { useAuth } from '../AuthContext';
 import Loading from './Loading';
 import axios from 'axios';
 import api from '../axiosInstance';
-import exportToExcel from './ExportExcel';
+import { exportStorage, exportStorageExpense, exportToExcel } from './ExportExcel';
 // import { firestore } from '../Firebase.tmp';
 
 const sortByExpiredDate = (items, ascending = true) => {
   return [...items].sort((a, b) => {
-    const dateA = a.stok.length > 0 ? new Date(a.stok[0].expired) : new Date("9999-12-31");
-    const dateB = b.stok.length > 0 ? new Date(b.stok[0].expired) : new Date("9999-12-31");
+    const dateA = a.stok.length > 0 ? new Date(a.stok[0]?.expired) : new Date("9999-12-31");
+    const dateB = b.stok.length > 0 ? new Date(b.stok[0]?.expired) : new Date("9999-12-31");
     return ascending ? dateA - dateB : dateB - dateA;
   });
 };
@@ -25,8 +25,8 @@ const sortByExpiredDate = (items, ascending = true) => {
 const getNearestExpired = (items) => {
   const today = new Date();
   return items
-    .filter(s => new Date(s.expired) >= today)
-    .sort((a, b) => new Date(a.expired) - new Date(b.expired))[0] || null;
+    .filter(s => new Date(s?.expired) >= today)
+    .sort((a, b) => new Date(a?.expired) - new Date(b?.expired))[0] || null;
 };
 
 const AppTable = (
@@ -86,8 +86,26 @@ const AppTable = (
   const [isAscending, setIsAscending] = useState(true);
   const [nearestExpired, setNearestExpired] = useState(null);
 
-  const handleExport = () => {
-    if (startDate && endDate) {
+  const handleExport = async () => {
+    if (title === "Storage Expense") {
+
+      const response = await api.post("/data", {
+        collection: "storageLog", // Nama koleksi yang diminta
+        filter: {}, // Filter yang diberikan dari prop
+        sort: { createdAt: -1 }, // Urutan data
+      });
+      var filteredData = response.data.filter((data) => {
+        if (startDate && endDate) {
+          return moment(data?.createdAt).isBetween(moment(startDate).format(), moment(endDate).format())
+        } else return data
+      })
+
+      if (startDate && endDate) {
+        exportStorageExpense(filteredData, `Laporan-Storage_Expense-${moment(startDate).format("DD-MM-YYYY")}_-_${moment(endDate).format("DD-MM-YYYY")}.xlsx`)
+      } else {
+        exportStorageExpense(filteredData)
+      }
+    } else if (startDate && endDate) {
       const sortedData = filteredData.map(session => {
         return {
           ...session,
@@ -107,6 +125,7 @@ const AppTable = (
       exportToExcel(sortedData, `Laporan-Anomaly-${moment(startDate).format("DD-MM-YYYY")}_${moment(endDate).format("DD-MM-YYYY")}.xlsx`
         , startDate, endDate)
     }
+
   }
 
 
@@ -136,7 +155,6 @@ const AppTable = (
       Object.values(item).some(val =>
         String(val).toLowerCase().includes(search?.toLowerCase())
       ));
-
   // Pagination Logic
   const itemsPerPage = 10;
   function hitungDurasi(waktuAwal, waktuAkhir = moment().format()) {
@@ -577,7 +595,7 @@ const AppTable = (
             </CTableHead>
             <CTableBody>
               {currentData.map((data, index1) => {
-                var totalStok = title === "Management Storage" && data?.stok?.reduce((sum, s) => sum + (data?.tipe === "qty" ? s.qty : s.berat), 0);
+                var totalStok = title === "Management Storage" && data?.stok?.reduce((sum, s) => sum + (data?.tipe === "qty" ? s?.qty : s?.berat), 0);
                 if (data?.tipe === "berat") {
                   totalStok = totalStok >= 1000 ? totalStok / 1000 + " kg" : totalStok + " gram"
                 }
@@ -603,6 +621,15 @@ const AppTable = (
                           if (title === "Management Storage") {
                             render.push(
                               <CButton className='me-2' size="sm" color="warning" onClick={() => { setDetail(data); setAction("detail"); setVisible(true) }}><CIcon icon={cilPencil} /> Edit</CButton>)
+                          } else if (title === "Storage Report" || title === "Storage Expense") {
+                            if (title === "Storage Report") {
+                              render.push(
+                                <CButton className='me-2' size="sm" color="primary" onClick={() => { console.log("storage"); exportStorage(data?.item) }}><CIcon icon={cilShare} /> Download</CButton>)
+                            } else {
+                              render.push(
+                                <CButton className='me-2' size="sm" color="primary" onClick={() => { console.log("expense"); exportStorageExpense(data?.item) }}><CIcon icon={cilShare} /> Download</CButton>)
+                            }
+
                           } else if (data?.status !== "CLOSE" && title !== "Management Subscription") {
                             render.push(
                               <CButton className='me-2' size="sm" color="warning" onClick={() => { setEdit(data); setAction("edit"); setVisible(true) }}><CIcon icon={cilPencil} /> Edit</CButton>)
@@ -639,35 +666,76 @@ const AppTable = (
                       case "time_in": return <CTableDataCell key={column.key + index}>{typeof data?.createdAt === "object" ? moment(data?.createdAt?.toDate()).tz("Asia/Jakarta").format("HH:mm:ss") : moment(data?.createdAt).tz("Asia/Jakarta").format("HH:mm:ss")}</CTableDataCell>
                       case "time_out": return <CTableDataCell key={column.key + index}>{data?.time_out ? moment(data?.time_out).format("HH:mm:ss") : "-"}</CTableDataCell>
                       case "closeAt": return <CTableDataCell key={column.key + index}>{data?.closeAt ? moment(data?.closeAt).format("HH:mm:ss") : "-"}</CTableDataCell>
-                      case "pemasukan": return <CTableDataCell key={column.key + index}>{(() => {
-                        var pemasukan = (data?.transaction || []).reduce((total, table) => {
-                          // console.log(table?.paymentMethod)
-                          if (table?.paymentMethod === "cash") {
-                            var orderTotal = (table?.item ? table?.item?.reduce((total1, item1) => {
-                              const totalAddOn = item1?.addOns
-                                ? item1.addOns.reduce((total1, item1) => total1 + Number(item1.harga), 0)
-                                : 0;
+                      case "pemasukan":
+                        return (
+                          <CTableDataCell key={column.key + index}>
+                            {(() => {
+                              const transaksi = data?.transaction || [];
 
-                              if (!item1?.tipe && item1?.addOns) {
-                                const itemTotal = (Number(item1.harga) + totalAddOn) * item1.qty;
-                                return total1 + itemTotal;
-                              } else return total1
-                            }, 0) : 0) || 0
-                            var boardGame = (table?.item ? table?.item?.reduce((total1, item1) => {
-                              if (!item1?.addOns) {
-                                if (item1?.tipe === "durasi" && item1?.duration === "00:00") return total1 + hitungHarga(table, table?.start, table?.end)
-                                else return total1 + (Number(item1.harga) * Number(item1.qty));
-                              } else return total1
-                            }, 0) : 0) || 0
+                              const hitungCafe = (items = []) => {
+                                return items.reduce((sum, item) => {
+                                  if (!item?.tipe && item?.addOns) {
+                                    const harga = Number(item.harga || 0);
+                                    const qty = Number(item.qty || 1);
+                                    const totalAddOn = item.addOns.reduce((a, b) => a + Number(b.harga || 0), 0);
+                                    return sum + (harga + totalAddOn) * qty;
+                                  }
+                                  return sum;
+                                }, 0);
+                              };
 
-                            var subTotal = (table?.discount && table?.discount !== 0 ? (table?.typeDiscount ? Number(orderTotal) * (1 - (table?.discount / 100)) : (Number(orderTotal) - table?.discount)) : 0)
-                            const tax = Number(table?.tax && table?.tax !== 0 ? Number(orderTotal) * (((table?.tax < 1 && table?.tax > 0) ? table?.tax : table?.tax / 100)) : 0);
-                            subTotal += tax
-                            return total + subTotal + boardGame
-                          } else return total
-                        }, 0)
-                        return formatNumber(pemasukan)
-                      })()}</CTableDataCell>
+                              const hitungBoardGame = (items = [], trx) => {
+                                return items.reduce((sum, item) => {
+                                  if (!item?.addOns) {
+                                    if (item?.category === "board game") {
+                                      return sum + Number(item.harga || 0) * Number(item.qty || 1);
+                                    }
+                                  }
+                                  return sum;
+                                }, 0);
+                              };
+                              const hitungSubtotal = ({ item, discount, typeDiscount, tax }, trx) => {
+                                const cafeTotal = hitungCafe(item); // total harga cafe (dengan addOns)
+                                const boardGameTotal = hitungBoardGame(item, trx); // board game (tanpa addOns)
+
+                                // Pajak dihitung dari total cafe SEBELUM diskon
+                                const taxAmount = tax
+                                  ? cafeTotal * (tax < 1 ? tax : tax / 100)
+                                  : 0;
+
+                                // Diskon hanya dikurangi dari total cafe (bukan boardgame, bukan pajak)
+                                let diskonAmount = 0;
+                                if (discount && discount !== 0) {
+                                  diskonAmount = typeDiscount
+                                    ? cafeTotal * (discount / 100)
+                                    : discount;
+                                }
+
+                                const subtotal = (cafeTotal - diskonAmount) + taxAmount + boardGameTotal;
+                                return subtotal;
+                              };
+
+                              const pemasukan = transaksi.reduce((total, trx) => {
+                                let totalCash = 0;
+
+                                if (Array.isArray(trx.splitBill) && trx.splitBill.length > 0) {
+                                  for (const split of trx.splitBill) {
+                                    if (split.paymentMethod === "cash") {
+                                      totalCash += hitungSubtotal(split, trx);
+                                    }
+                                  }
+                                } else if (trx.paymentMethod === "cash") {
+                                  totalCash += hitungSubtotal(trx, trx);
+                                }
+
+                                return total + totalCash;
+                              }, 0);
+
+                              return formatNumber(pemasukan);
+                            })()}
+                          </CTableDataCell>
+                        );
+
                       case "pengeluaran": return <CTableDataCell key={column.key + index}>{Array.isArray(data?.pengeluaran) ? formatNumber(data?.pengeluaran?.reduce((total, data) => { return total + data?.value }, 0)) : 0}</CTableDataCell>
                       case "start":
                         if (column.name === "Date") return <CTableDataCell key={column.key + index}>{data?.start ? moment(data?.[column.key]).format("DD/MM/YYYY") :

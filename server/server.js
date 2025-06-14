@@ -69,6 +69,8 @@ mongoose.connect("mongodb://localhost:27017/anomaly")
         // await syncProductReport(); // Jalankan sinkronisasi productReport
         // const syncStorage = require("./syncProductReport.js");
         // await syncStorage(); // Jalankan sinkronisasi productReport
+        // await syncTable();
+
 
     })
     .catch(err => console.error("❌ MongoDB Connection Error:", err));
@@ -258,13 +260,53 @@ app.get("/api/storageReport", authMiddleware, async (req, res) => {
             if (str.beforeStok > str.stok) {
                 var usedStok = Number(str.beforeStok) - Number(str.stok)
                 total += usedStok * str?.costPerItem
-                data.item.push({ tipe: str?.tipe, usedStok, cost: usedStok * str?.costPerItem, costPerItem: str.costPerItem })
+                var tmpItem = { ...str.toObject(), usedStok, cost: usedStok * str?.costPerItem }
+                data.item.push(tmpItem)
             }
         }
         data.total = Math.ceil(total)
         await StorageReport.create(data);
 
         console.log("✅ Pembuat Laporan Storage selesai.");
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get("/api/storageExpense", authMiddleware, async (req, res) => {
+
+    try {
+        const { startDate, endDate } = req.query;
+        const StorageLog = getModel("storageLog");
+        const StorageExpense = getModel("storageExpense");
+        var total = 0;
+
+        const storageLogs = await StorageLog.find(
+            {
+                createdAt: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                },
+                event: "add"
+            }
+        );
+
+        var data = {
+            createdAt: moment().tz("Asia/Jakarta").toDate(),
+            startDate,
+            endDate,
+            item: []
+        }
+
+        for (const str of storageLogs) {
+            var tmpStok = Number(str.stok)
+            total += Number(str?.harga)
+            data.item.push({ ...str })
+        }
+        data.total = Math.ceil(total)
+        await StorageExpense.create(data);
+
+        console.log("✅ Pembuat Laporan Storage Expense selesai.");
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

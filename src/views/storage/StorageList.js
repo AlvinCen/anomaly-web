@@ -184,8 +184,8 @@ const StorageList = () => {
     const tambahItem = async (e) => {
         e.preventDefault();
         setLoading(true)
-        console.log(nama)
-        console.log(tipe)
+        // console.log(nama)
+        // console.log(tipe)
         const tmpData = {
             name: nama.label,
             tipe,
@@ -214,6 +214,8 @@ const StorageList = () => {
                         return { ...s, costPerItem: berat !== 0 && berat !== undefined ? Number(harga) / Number(berat) : Number(harga) / Number(stok) }; // tetap
                     }
                 });
+
+                console.log(updatedStok)
 
                 const updateQuery = {};
 
@@ -245,68 +247,69 @@ const StorageList = () => {
                     updatedAt: moment().format(),
                 };
 
-                const res = await api.put("/data/update", {
-                    collection: "storage",
-                    filter: { _id: nama?._id },
-                    update: updateQuery
-                });
+                // const res = await api.put("/data/update", {
+                //     collection: "storage",
+                //     filter: { _id: nama?._id },
+                //     update: updateQuery
+                // });
 
-                await api.post("/data/add", {
-                    collection: "storageLog",
-                    data: {
-                        ...tmpData,
-                        storageId: nama?._id
-                    }
-                });
-            } else {
-                if (tipe === "qty") {
-                    const response = await api.post("/data/add", {
-                        collection: "storage",
-                        data: {
-                            name: nama?.value,
-                            stok: [{
-                                expired,
-                                harga,
-                                qty: Number(stok),
-                                costPerItem: Number(harga) / Number(stok)
-                            }],
-                            tipe,
-                            createdAt: moment().format().toString(),
-                        }
-                    });
-                    await api.post("/data/add", {
-                        collection: "storageLog",
-                        data: {
-                            ...tmpData,
-                            storageId: response.data.newData._id
-                        }
-                    });
+                // await api.post("/data/add", {
+                //     collection: "storageLog",
+                //     data: {
+                //         ...tmpData,
+                //         storageId: nama?._id
+                //     }
+                // });
+            } 
+            // else {
+            //     if (tipe === "qty") {
+            //         const response = await api.post("/data/add", {
+            //             collection: "storage",
+            //             data: {
+            //                 name: nama?.value,
+            //                 stok: [{
+            //                     expired,
+            //                     harga,
+            //                     qty: Number(stok),
+            //                     costPerItem: Number(harga) / Number(stok)
+            //                 }],
+            //                 tipe,
+            //                 createdAt: moment().format().toString(),
+            //             }
+            //         });
+            //         await api.post("/data/add", {
+            //             collection: "storageLog",
+            //             data: {
+            //                 ...tmpData,
+            //                 storageId: response.data.newData._id
+            //             }
+            //         });
 
-                } else {
-                    const response = await api.post("/data/add", {
-                        collection: "storage",
-                        data: {
-                            name: nama?.value,
-                            stok: [{
-                                expired,
-                                harga,
-                                berat: Number(berat),
-                                costPerItem: Number(harga) / Number(berat)
-                            }],
-                            tipe,
-                            createdAt: moment().format().toString(),
-                        }
-                    });
-                    await api.post("/data/add", {
-                        collection: "storageLog",
-                        data: {
-                            ...tmpData,
-                            storageId: response.data.newData._id
-                        }
-                    });
-                }
+            //     } else {
+            //         const response = await api.post("/data/add", {
+            //             collection: "storage",
+            //             data: {
+            //                 name: nama?.value,
+            //                 stok: [{
+            //                     expired,
+            //                     harga,
+            //                     berat: Number(berat),
+            //                     costPerItem: Number(harga) / Number(berat)
+            //                 }],
+            //                 tipe,
+            //                 createdAt: moment().format().toString(),
+            //             }
+            //         });
+            //         await api.post("/data/add", {
+            //             collection: "storageLog",
+            //             data: {
+            //                 ...tmpData,
+            //                 storageId: response.data.newData._id
+            //             }
+            //         });
+            //     }
 
-            }
+            // }
 
             setRefresh(!refresh)
 
@@ -481,12 +484,15 @@ const StorageList = () => {
                                             defaultOptions
                                             loadOptions={loadOption}
                                             styles={customStyles}
-
                                             filterOption={filterOption}
                                             menuPortalTarget={document.body}
-                                            onChange={(newValue) => setNama(newValue)}
+                                            onChange={(newValue) => {
+                                                if (newValue?.tipe !== undefined) {
+                                                    setTipe(newValue?.tipe)
+                                                }
+                                                setNama(newValue)
+                                            }}
                                             onCreateOption={handleCreate}
-
                                             value={nama}
                                             placeholder="Nama Barang" />
                                     </CCol>

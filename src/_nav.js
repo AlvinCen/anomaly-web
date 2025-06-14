@@ -111,6 +111,11 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'Storage Expense',
+        to: '/storage/expense',
+      },
+      {
+        component: CNavItem,
         name: 'Storage Log',
         to: '/storage/log',
       }
