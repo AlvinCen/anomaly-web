@@ -15,6 +15,7 @@ import { exportStorage, exportStorageExpense, exportToExcel } from './ExportExce
 // import { firestore } from '../Firebase.tmp';
 
 const sortByExpiredDate = (items, ascending = true) => {
+  console.log(items)
   return [...items].sort((a, b) => {
     const dateA = a.stok.length > 0 ? new Date(a.stok[0]?.expired) : new Date("9999-12-31");
     const dateB = b.stok.length > 0 ? new Date(b.stok[0]?.expired) : new Date("9999-12-31");
@@ -779,8 +780,12 @@ const AppTable = (
                                 render.push(<CButton color="primary" className='me-2' size="sm" onClick={() => { setCancel(data) }}>Cancel</CButton>)
                               } else {
                                 render.push(<CButton className='me-2' color={color} size="sm" onClick={() => { setDetail(data); setAction("pay"); setModal(true) }}>Pay</CButton>)
-                                if (title === "History Order") render.push(<CButton color="success" size="sm" onClick={() => { setDetail(data); setMeja("table-1"); setAction("resume"); setVisible(true) }}>Resume</CButton>)
+                                if (title === "History Order") render.push(<CButton color="success" size="sm" className='me-2' onClick={() => { setDetail(data); setMeja("table-1"); setAction("resume"); setVisible(true) }}>Resume</CButton>)
+                                render.push(<CButton color="warning" size="sm" onClick={() => {
+                                  handlePrintClick(data, "", false, false, false)
+                                }}>Print</CButton>)
                               }
+
                               return <CTableDataCell key={column.key + index}>
                                 {/* <CButton className='me-2' size="sm" color="info" onClick={() => { setDetail(data); setAction("detail"); setModal(true) }}>Detail</CButton> */}
                                 {render}
@@ -805,8 +810,6 @@ const AppTable = (
                                   <CButton className='me-2' size="sm" color="info" onClick={() => { setDetail(data); setAction("detail"); setModal(true) }}>Detail</CButton>
                                   <CButton color="warning" size="sm" onClick={() => {
                                     handlePrintClick(data, "", data?.paymentMethod, data?.pay, data?.changes)
-                                    // console.log(tmpData)
-                                    // window.open(`https://breakpointciledug.page.link/?link=https://breakpoint-ciledug.web.app/welcome?data=${tmpData}&apn=com.breakpoint&afl=https://breakpoint-ciledug.web.app/`)
                                   }}>Print</CButton>
                                 </>)
                               }

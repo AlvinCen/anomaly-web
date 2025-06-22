@@ -44,9 +44,10 @@ const Table = () => {
     const [inputFilter, setInputFilter] = useState("");
 
     const [time, setTime] = useState(0);
-    const [isLoading,] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const [loading, setLoading] = useState(false);
     const [refresh, setRefresh] = useState(false)
+    const [selectAll, setSelectAll] = useState(true)
 
     const [value, setValue] = useState("");
     const [col, setCol] = useState("")
@@ -565,15 +566,15 @@ const Table = () => {
             const collection = "tableHistory";
             const result = await window?.electron.printReceipt({
                 data,
-                // cafe,
                 paymentMethod: ((data?.tableName === "grabfood" || data?.tableName === "gofood") && paymentMethod === "qris") ? "qris" : paymentMethod,
                 pay: inputBayar,
-                changes: kembali
+                changes: kembali ? kembali : 0
             });
+
 
             if (result.success) {
                 try {
-                    if (data?.status === "PAYMENT") {
+                    if (data?.status === "PAYMENT" && kembali !== false) {
                         // ✅ Update data menggunakan API MongoDB       
                         // var isPaid = data.item.every(item => item.payAt !== undefined || item.isPay);
                         var paidItems = [];
@@ -704,7 +705,7 @@ const Table = () => {
 
                     Swal.fire({
                         title: "Success!",
-                        text: "Pembayaran berhasil",
+                        text: "Print Berhasil",
                         icon: "success"
                     });
                 } catch (error) {
@@ -725,7 +726,7 @@ const Table = () => {
         } else {
             Swal.fire({
                 title: "Failed!",
-                text: "Pembayaran tidak dapat diproses",
+                text: "Print tidak dapat diproses",
                 icon: "error"
             });
             console.log("Electron is not available.");
@@ -1360,7 +1361,7 @@ const Table = () => {
         const tmpMeja = detail?._id || meja?.id;
         const namaMeja = detail?.name || meja?.name;
         var dataClient = { name: client?.id ? client?.label.split(" ")[0] : client?.label, nomor: client?.id ? client?.nomor : nomor };
-
+        dataClient.name = dataClient.name !== undefined ? dataClient.name : namaMeja
         var orderItem = []; let isPromo = false
 
         if (Object.keys(item).length > 0) {
@@ -4390,7 +4391,7 @@ const Table = () => {
                                                 <CButton color='warning' className="w-100" onClick={() => { setDetail(table); setAction("detailMeja"); setVisible(true) }}>Detail Meja</CButton>
                                             </CCol>
                                             <CCol>
-                                                <CButton className='mb-2 w-100' color='primary' onClick={() => { addPause(table) }} style={{ height: "38px", fontSize: "12.5px" }}>Resume / Pause</CButton>
+                                                {/* <CButton className='mb-2 w-100' color='primary' onClick={() => { addPause(table) }} style={{ height: "38px", fontSize: "12.5px" }}>Resume / Pause</CButton> */}
                                                 {!loading ? <CButton color='danger' className='w-100' onClick={() => { confirmationStop(table) }}>Stop</CButton>
                                                     : <CSpinner color="primary" className="float-end" variant="grow" />}
                                             </CCol>
@@ -4636,7 +4637,37 @@ const Table = () => {
                         <CTable>
                             <CTableHead>
                                 <CTableRow>
-                                    {(action !== "detail" && (detail?.status === "PAYMENT")) && <CTableHeaderCell style={{ width: "100px" }}>Pay</CTableHeaderCell>}
+                                    {(action !== "detail" && (detail?.status === "PAYMENT")) && <CTableHeaderCell className='d-flex flex-row' style={{ width: "150px" }}>
+                                        <CFormCheck style={{ marginRight: "10px" }}
+                                            checked={selectAll}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setSelectAll(checked)
+                                                setDetail(prevDetail => {
+                                                    var updatedItem = { ...prevDetail }
+                                                    if (prevDetail?.splitBill !== undefined) {
+                                                        // tmpItem.unpaidItems[idx].isPay = e.target.checked
+                                                        updatedItem = prevDetail.unpaidItems?.map(item => ({
+                                                            ...item,
+                                                            isPay: checked, // atau !item.isPay jika toggle
+                                                        })) || [];
+                                                        return {
+                                                            ...prevDetail,
+                                                            unpaidItems: updatedItem,
+                                                        };
+                                                    } else {
+                                                        // tmpItem.unpaidItems[idx].isPay = e.target.checked
+                                                        updatedItem = prevDetail.item?.map(item => ({
+                                                            ...item,
+                                                            isPay: checked, // atau !item.isPay jika toggle
+                                                        })) || [];
+                                                        return {
+                                                            ...prevDetail,
+                                                            item: updatedItem,
+                                                        };
+                                                    }
+                                                });
+                                            }} /><div>Pay</div></CTableHeaderCell>}
                                     {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
                                     {detail?.status === "AKTIF" && <CTableHeaderCell style={{ width: "100px" }}>Print</CTableHeaderCell>}
                                     <CTableHeaderCell style={{ width: detail?.status === "PAYMENT" ? "140px" : "100px" }}>Qty</CTableHeaderCell>
@@ -4659,7 +4690,7 @@ const Table = () => {
                                                 // else if (action === "pay") harga = formatNumber(detail?.harga)
                                                 : formatNumber(hitungHarga(detail, detail?.start, detail?.end, detail?.rate, detail?.rate1))}</CTableDataCell>
                                     </CTableRow>}
-                                {(detail?.splitBill !== undefined ? detail?.unpaidItems : detail?.item)?.map((item, idx) => {
+                                {(detail?.splitBill !== undefined && (detail?.status === "PAYMENT" || detail?.status === "CLOSE") ? detail?.unpaidItems : detail?.item)?.map((item, idx) => {
                                     var itemCafe = item.hasOwnProperty("addOns")
                                     var totalAddOn = itemCafe ? item?.addOns?.reduce((total1, item1) => {
                                         return total1 + Number(item1.harga);

@@ -247,69 +247,68 @@ const StorageList = () => {
                     updatedAt: moment().format(),
                 };
 
-                // const res = await api.put("/data/update", {
-                //     collection: "storage",
-                //     filter: { _id: nama?._id },
-                //     update: updateQuery
-                // });
+                const res = await api.put("/data/update", {
+                    collection: "storage",
+                    filter: { _id: nama?._id },
+                    update: updateQuery
+                });
 
-                // await api.post("/data/add", {
-                //     collection: "storageLog",
-                //     data: {
-                //         ...tmpData,
-                //         storageId: nama?._id
-                //     }
-                // });
-            } 
-            // else {
-            //     if (tipe === "qty") {
-            //         const response = await api.post("/data/add", {
-            //             collection: "storage",
-            //             data: {
-            //                 name: nama?.value,
-            //                 stok: [{
-            //                     expired,
-            //                     harga,
-            //                     qty: Number(stok),
-            //                     costPerItem: Number(harga) / Number(stok)
-            //                 }],
-            //                 tipe,
-            //                 createdAt: moment().format().toString(),
-            //             }
-            //         });
-            //         await api.post("/data/add", {
-            //             collection: "storageLog",
-            //             data: {
-            //                 ...tmpData,
-            //                 storageId: response.data.newData._id
-            //             }
-            //         });
+                await api.post("/data/add", {
+                    collection: "storageLog",
+                    data: {
+                        ...tmpData,
+                        storageId: nama?._id
+                    }
+                });
+            } else {
+                if (tipe === "qty") {
+                    const response = await api.post("/data/add", {
+                        collection: "storage",
+                        data: {
+                            name: nama?.value,
+                            stok: [{
+                                expired,
+                                harga,
+                                qty: Number(stok),
+                                costPerItem: Number(harga) / Number(stok)
+                            }],
+                            tipe,
+                            createdAt: moment().format().toString(),
+                        }
+                    });
+                    await api.post("/data/add", {
+                        collection: "storageLog",
+                        data: {
+                            ...tmpData,
+                            storageId: response.data.newData._id
+                        }
+                    });
 
-            //     } else {
-            //         const response = await api.post("/data/add", {
-            //             collection: "storage",
-            //             data: {
-            //                 name: nama?.value,
-            //                 stok: [{
-            //                     expired,
-            //                     harga,
-            //                     berat: Number(berat),
-            //                     costPerItem: Number(harga) / Number(berat)
-            //                 }],
-            //                 tipe,
-            //                 createdAt: moment().format().toString(),
-            //             }
-            //         });
-            //         await api.post("/data/add", {
-            //             collection: "storageLog",
-            //             data: {
-            //                 ...tmpData,
-            //                 storageId: response.data.newData._id
-            //             }
-            //         });
-            //     }
+                } else {
+                    const response = await api.post("/data/add", {
+                        collection: "storage",
+                        data: {
+                            name: nama?.value,
+                            stok: [{
+                                expired,
+                                harga,
+                                berat: Number(berat),
+                                costPerItem: Number(harga) / Number(berat)
+                            }],
+                            tipe,
+                            createdAt: moment().format().toString(),
+                        }
+                    });
+                    await api.post("/data/add", {
+                        collection: "storageLog",
+                        data: {
+                            ...tmpData,
+                            storageId: response.data.newData._id
+                        }
+                    });
+                }
 
-            // }
+            }
 
             setRefresh(!refresh)
 

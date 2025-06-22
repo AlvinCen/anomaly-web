@@ -72,6 +72,8 @@ import {
   cilCoffee,
   cilTablet,
   cilShare,
+  cilCreditCard,
+  cilBike,
 } from '@coreui/icons'
 import WidgetsBrand from '../widgets/WidgetsBrand'
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
@@ -86,7 +88,7 @@ import Swal from 'sweetalert2'
 import { ConsoleView } from 'react-device-detect'
 import api from '../../axiosInstance'
 import { useAuth } from '../../AuthContext'
-import { faAnchor, faDice, faHammer, faPercent, faTable } from '@fortawesome/free-solid-svg-icons'
+import { faAnchor, faDice, faHammer, faHelmetSafety, faMotorcycle, faPercent, faTable } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DoughnutChartQty from '../../components/DoughnutChart'
 import { exportProduct, exportStorage } from '../../components/ExportExcel'
@@ -133,8 +135,17 @@ const Report = () => {
   const [gross, setGross] = useState(0)
   const [net, setNet] = useState(0)
   const [table, setTable] = useState(0)
-  const [netCafe, setNetCafe] = useState(0)
+  const [totalMinutes, setTotalMinutes] = useState(0)
+  const [average, setAverage] = useState(0)
+  const [minimum, setMinimum] = useState(0)
+  const [maximum, setMaximum] = useState(0)
   const [cafe, setCafe] = useState(0)
+  const [totalProductCafe, setTotalProductCafe] = useState(0)
+  const [totalProductBG, setTotalProductBG] = useState(0)
+  const [cash, setCash] = useState(0)
+  const [cashless, setCashless] = useState(0)
+  const [gofood, setGofood] = useState(0)
+  const [grabfood, setGrabfood] = useState(0)
   const [discount, setDiscount] = useState(0)
   const [tax, setTax] = useState(0)
   const [cashCafe, setCashCafe] = useState([])
@@ -950,121 +961,49 @@ const Report = () => {
     }
   }, [hapus]);
 
-  // useEffect(() => {
-  //   calculateIncome()
-  // }, [data])
 
-  // useEffect(() => {
-  //   var start = ""
-  //   var end = ""
-  //   if (activeBtn === 'Day') {
-  //     start = moment(moment(startDate), 'YYYY-MM-DD').set("hour", 8);
-  //     end = moment(moment(endDate), 'YYYY-MM-DD')
-  //   } else {
-  //     start = moment(moment(startDate), 'YYYY-MM-DD').set("hour", 8);
-  //     end = moment(moment(endDate), 'YYYY-MM-DD')
-  //   }
-  //   if (moment(start).isValid() && moment(end).isValid()) {
-  //     var tmpData = data.filter((data) => {
-  //       return (moment(data?.createdAt).isBetween(start, end) || moment(data?.createdAt).isBetween(moment(endDate, "YYYY-MM-DD").set("hour", 0), moment(endDate, "YYYY-MM-DD").set("hour", 6)))
-  //         && (data?.status === "PAYMENT" || data?.status === "CLOSE")
-  //     })
+  function totalDurasiBoardGame(tableHistory) {
+    let totalMenit = 0;
+    let count = 0;
+    let durasiList = [];
 
-  //     var tmpOrder = dataMerch.filter((data) => {
-  //       return (moment(data?.createdAt).isBetween(start, end) || moment(data?.createdAt).isBetween(moment(endDate, "YYYY-MM-DD").set("hour", 0), moment(endDate, "YYYY-MM-DD").set("hour", 6)))
-  //         && (data?.status === "PAYMENT" || data?.status === "CLOSE")
-  //     })
+    tableHistory.forEach((doc) => {
+      const hasBoardGameItem = Array.isArray(doc.item) && doc.item.some(
+        (item) => item?.tipe || item?.category === "board game"
+      );
 
-  //     console.log(tmpData)
+      if (hasBoardGameItem && doc.start && doc.end) {
+        const start = new Date(doc.start);
+        const end = new Date(doc.end);
+        const durasiMenit = (end - start) / 1000 / 60;
 
-  //     var table = tmpData.reduce((total, data) => {
-  //       var harga = data?.hargaVoid ? data?.hargaVoid : data?.harga
-  //       return total + Number(harga)
-  //     }, 0)
+        if (durasiMenit > 0) {
+          durasiList.push(durasiMenit);
+          totalMenit += durasiMenit;
+          count += 1;
+        }
+      }
+    });
 
-  //     var cafe = tmpOrder.reduce((total, data) => {
-  //       var promo = data?.item?.filter(item => !item.hasOwnProperty('duration'))
+    const avgMenit = durasiList.length > 0 ? totalMenit / durasiList.length : 0;
+    const minMenit = durasiList.length > 0 ? Math.min(...durasiList) : 0;
+    const maxMenit = durasiList.length > 0 ? Math.max(...durasiList) : 0;
 
-  //       if (data?.total !== undefined && !isNaN(data?.total)) {
-  //         var tmpTotal = promo?.reduce((totalPromo, item) => { return Number(totalPromo) + (Number(item?.harga) * Number(item?.qty)) }, 0)
-  //         return Number(total) + Number(tmpTotal)
-  //       }
-  //       else return Number(total)
-  //     }, 0)
-  //     // console.log(tmpOrder)
+    const format = (menit) => {
+      const jam = Math.floor(menit / 60);
+      const sisamenit = Math.round(menit % 60);
+      return { jam, menit: sisamenit };
+    };
 
-  //     var total = table + cafe
-  //     // console.log(tmpData)
+    return {
+      totalMenit,
+      total: format(totalMenit),
+      avg: format(avgMenit),
+      min: format(minMenit),
+      max: format(maxMenit),
+    };
+  }
 
-  //     setTotal(total)
-  //     setTable(table)
-  //     setCafe(cafe)
-  //     setFilterData(tmpData)
-  //   }
-  // }, [activeBtn, data, startDate, endDate])
-
-  // useEffect(() => {
-  //   var start = moment(startProductDate).startOf("day").format()
-  //   var end = moment(endProductDate).endOf("day").format()
-  //   var tmpProductData = productData?.filter((data) => {
-  //     return moment(data?.createdAt).isBetween(start, end)
-  //   })
-  //   setFilterProduct(tmpProductData)
-  // }, [productData, startProductDate, endProductDate])
-
-  // useEffect(() => {
-  //   var start = ""
-  //   var end = ""
-  //   if (activeBtnCafe === 'Day') {
-  //     start = moment(moment(startDateCafe), 'YYYY-MM-DD').startOf("day");
-  //     end = moment(moment(endDateCafe), 'YYYY-MM-DD').endOf("day");
-  //   } else {
-  //     start = moment(moment(startDateCafe, 'MMMM'), 'YYYY-MM').startOf("day");
-  //     end = moment(moment(endDateCafe, 'MMMM'), 'YYYY-MM').endOf("day");
-  //   }
-  //   if (moment(start).isValid() && moment(end).isValid()) {
-  //     var tmpData = dataCafe.filter((data) => {
-  //       return moment(data?.createdAt).isBetween(start, end) && data?.status === "CLOSE"
-  //     })
-  //     var cash = tmpData.filter((data) => {
-  //       return data?.paymentMethod === "cash"
-  //     }).reduce((total, data) => {
-  //       if (data?.pay !== 0) return total + data?.grandTotal
-  //       else return total
-  //     }, 0)
-
-  //     var qris = tmpData.filter((data) => {
-  //       return data?.paymentMethod === "cashless"
-  //     }).reduce((total, data) => {
-  //       if (data?.pay !== 0) return total + data?.grandTotal
-  //       else return total
-  //     }, 0)
-
-  //     var tax = tmpData.reduce((total, data) => {
-  //       return total + data?.total * 0.1
-  //     }, 0)
-
-  //     var service = tmpData.reduce((total, data) => {
-  //       var tmpTax = data?.total * 0.1
-  //       return total + (data?.grandTotal - (data?.total + tmpTax))
-  //     }, 0)
-
-  //     // var totalVoid = tmpData.reduce((total, data) => {
-  //     //   return Number(total) + (data?.hargaNormal && data?.hargaVoid ? (Number(data?.hargaNormal) - Number(data?.hargaVoid)) : 0)
-  //     // }, 0)
-
-  //     // var promo = tmpData
-  //     //   .flatMap((data) => data?.item.filter((item) => item?.isPromo))
-  //     //   .reduce((total, item) => {
-  //     //     return Number(total) + (Number(item?.harga) * Number(item?.qty))
-  //     //   }, 0)
-  //     setCashCafe(cash)
-  //     setQrisCafe(qris)
-  //     setTax(tax)
-  //     setService(service)
-  //     // setFilterData(tmpData)
-  //   }
-  // }, [activeBtnCafe, dataCafe, startDateCafe, endDateCafe])
 
   // Fungsi untuk mengambil data cafe
   const fetchCafeData = async () => {
@@ -1106,7 +1045,6 @@ const Report = () => {
         filter: {},
         sort: {}
       })
-      console.log()
       setStorageLog(response.data);
     } catch (error) {
       console.error('Error fetching merchandise data:', error);
@@ -1122,13 +1060,38 @@ const Report = () => {
         filter: {},
         sort: {}
       })
+
+      const response1 = await api.post('/data', {
+        collection: "tableHistory",
+        filter: {
+          item: {
+            $elemMatch: {
+              $or: [
+                { tipe: { $exists: true, $ne: null } },
+                { category: "board game" }
+              ]
+            }
+          }
+        },
+        sort: {}
+      })
+
+
       const data = response.data
-      const productCafe = data.filter((data) => data.category === "")
+      var tableHistory = response1.data
+      const productCafe = data.filter((data) => data.category !== "board game")
       const mergeCafe = mergeItems(productCafe)
       const sortedCafe = mergeCafe.sort((a, b) => b.qty - a.qty);
       const productBoardGame = data.filter((data) => data.category === "board game")
       const mergeBoardGame = mergeItems(productBoardGame)
       const sortedBoardGame = mergeBoardGame.sort((a, b) => b.qty - a.qty);
+      var tmpTotalProductCafe = mergeCafe?.reduce((total, item) => {
+        return total + item?.qty
+      }, 0)
+      var tmpTotalProductBG = mergeBoardGame?.reduce((total, item) => {
+        return total + item?.qty
+      }, 0)
+
 
       setProductBoardGame(sortedBoardGame);
       setProductCafe(sortedCafe);
@@ -1139,8 +1102,16 @@ const Report = () => {
         const filtered = productBoardGame.filter(item => {
           return moment(new Date(item.createdAt)).tz("Asia/Jakarta").isBetween(moment(startProductDateBoardGame).startOf("day"), moment(endProductDateBoardGame).endOf("day"))
         });
+        const filterTableHistory = tableHistory.filter(item => {
+          return moment(new Date(item.createdAt)).tz("Asia/Jakarta").isBetween(moment(startProductDateBoardGame).startOf("day"), moment(endProductDateBoardGame).endOf("day"))
+        });
         var merge = mergeItems(filtered);
+        tmpTotalProductBG = merge?.reduce((total, item) => {
+          return total + item?.qty
+        }, 0)
         const sortedData = merge.sort((a, b) => b.qty - a.qty);
+
+        tableHistory = filterTableHistory
         setFilterProductBoardGame(sortedData);
       }
       if (startProductDateCafe && endProductDateCafe) {
@@ -1148,9 +1119,21 @@ const Report = () => {
           return moment(new Date(item.createdAt)).tz("Asia/Jakarta").isBetween(moment(startProductDateCafe).startOf("day"), moment(endProductDateCafe).endOf("day"))
         });
         var merge = mergeItems(filtered);
+        tmpTotalProductCafe = merge?.reduce((total, item) => {
+          return total + item?.qty
+        }, 0)
         const sortedData = merge.sort((a, b) => b.qty - a.qty);
         setFilterProductCafe(sortedData);
       }
+
+      const { totalMenit, avg, min, max, total } = totalDurasiBoardGame(tableHistory)
+
+      setTotalMinutes(total)
+      setAverage(avg)
+      setMaximum(max)
+      setMinimum(min)
+      setTotalProductCafe(tmpTotalProductCafe)
+      setTotalProductBG(tmpTotalProductBG)
     } catch (error) {
       console.error('Error fetching menu reports:', error);
       // Swal.fire('Error', 'Gagal memuat laporan menu', 'error');
@@ -1221,6 +1204,10 @@ const Report = () => {
   // Fungsi untuk mengambil data dengan filter
   const fetchFilteredData = async () => {
     try {
+      var cashTotal = 0
+      var cashlessTotal = 0
+      var gofoodTotal = 0
+      var grabfoodTotal = 0
       const mStart = moment(startDate).tz("Asia/Jakarta").startOf("day").format();
       const mEnd = moment(endDate).tz("Asia/Jakarta").endOf("day").format();
 
@@ -1294,6 +1281,82 @@ const Report = () => {
           return (total || 0) + dailyTotal
         }, 0)
 
+        tmpData?.map((cashier) => {
+          cashier?.transaction?.map((transaction) => {
+            if (transaction?.splitBill === undefined) {
+              if (transaction?.paymentMethod === "cash") {
+                var total = transaction?.item.reduce((sum, item) => {
+                  // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                  const harga = item?.harga || 0;
+                  return sum + ((Number(harga)) * item?.qty);
+                }, 0);
+                cashTotal += Number(total || 0)
+              }
+              else if (transaction?.paymentMethod === "qris" || transaction?.paymentMethod === "debit") {
+                var total = transaction?.item.reduce((total, item) => {
+                  // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                  const harga = item?.harga || 0;
+                  return total + ((Number(harga)) * item?.qty);
+                }, 0);
+                cashlessTotal += (total || 0)
+              }
+              else if (transaction?.paymentMethod === "grabfood") {
+                var total = transaction?.item.reduce((total, item) => {
+                  // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                  const harga = item?.harga || 0;
+                  return total + ((Number(harga)) * item?.qty);
+                }, 0);
+                grabfoodTotal += (total || 0)
+              }
+              else if (transaction?.paymentMethod === "gofood") {
+                var total = transaction?.item.reduce((total, item) => {
+                  // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                  const harga = item?.harga || 0;
+                  return total + ((Number(harga)) * item?.qty);
+                }, 0);
+                gofoodTotal += (total || 0)
+              }
+            }
+            else {
+              // console.log(transaction)
+              transaction?.splitBill.map((splitBill) => {
+                if (splitBill?.paymentMethod === "cash") {
+                  var total = splitBill?.item.reduce((total, item) => {
+                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                    const harga = item?.harga || 0;
+                    return total + ((Number(harga)) * item?.qty);
+                  }, 0);
+                  cashTotal += (total || 0)
+                }
+                else if (splitBill?.paymentMethod === "qris" || splitBill?.paymentMethod === "debit") {
+                  var total = splitBill?.item.reduce((total, item) => {
+                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                    const harga = item?.harga || 0;
+                    return total + ((Number(harga)) * item?.qty);
+                  }, 0);
+                  cashlessTotal += (total || 0)
+                }
+                else if (splitBill?.paymentMethod === "grabfood") {
+                  var total = splitBill?.item.reduce((total, item) => {
+                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                    const harga = item?.harga || 0;
+                    return total + ((Number(harga)) * item?.qty);
+                  }, 0);
+                  grabfoodTotal += (total || 0)
+                }
+                else if (splitBill?.paymentMethod === "gofood") {
+                  var total = splitBill?.item.reduce((total, item) => {
+                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                    const harga = item?.harga || 0;
+                    return total + ((Number(harga)) * item?.qty);
+                  }, 0);
+                  gofoodTotal += (total || 0)
+                }
+              });
+            }
+          })
+        })
+
         const totalCost = (storageLog || []).reduce((total, storage) => {
           if (storage?.beforeStok > storage?.stok) {
             var usedStok = Number(storage.beforeStok) - Number(storage.stok)
@@ -1302,12 +1365,18 @@ const Report = () => {
           else return total
         }, 0)
 
+        // var tmpPemasukan = tmpCashier?.pemasukan?.reduce((total, data) => { return total + data?.value }, 0)
+        cashTotal += tmpPemasukan || 0
         // console.log(totalCost)
 
         setGross((tableTotal + cafeTotal) || 0);
         setNet(((tableTotal + cafeTotal) + taxTotal - discountTotal) || 0);
         setTable(tableTotal || 0);
         setCafe(cafeTotal || 0)
+        setCash(cashTotal || 0)
+        setCashless(cashlessTotal || 0)
+        setGrabfood(grabfoodTotal || 0)
+        setGofood(gofoodTotal || 0)
         // setNetCafe(cafeTotal || 0)
         setDiscount(discountTotal || 0)
         setTax(taxTotal || 0)
@@ -1318,7 +1387,11 @@ const Report = () => {
         setNet(0);
         setTable(0);
         setCafe(0)
-        setNetCafe(0)
+        setCash(0)
+        setCashless(0)
+        setGofood(0)
+        setGrabfood(0)
+        // setNetCafe(0)
         setDiscount(0)
         setTax(0)
         setFilterData([]);
@@ -2023,7 +2096,7 @@ const Report = () => {
                 <CWidgetStatsF
                   className="mb-3"
                   color="success"
-                  icon={<CIcon icon={cilCash} height={24} />}
+                  icon={<CIcon icon={cilChartPie} height={24} />}
                   title="Net Sales"
                   value={`Rp. ${formatNumber(net)}`} />
               </CCol>
@@ -2031,9 +2104,41 @@ const Report = () => {
                 <CWidgetStatsF
                   className="mb-3"
                   color="success"
-                  icon={<CIcon icon={cilCash} height={24} />}
+                  icon={<CIcon icon={cilChartPie} height={24} />}
                   title="Gross Sales"
                   value={`Rp. ${formatNumber(gross)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="info"
+                  icon={<CIcon icon={cilCash} height={24} />}
+                  title="Cash"
+                  value={`Rp. ${formatNumber(cash)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="primary"
+                  icon={<CIcon icon={cilCreditCard} height={24} />}
+                  title="QRIS / Debit"
+                  value={`Rp. ${formatNumber(cashless)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="info"
+                  icon={<FontAwesomeIcon icon={faMotorcycle} />}
+                  title="Gofood"
+                  value={`Rp. ${formatNumber(gofood)}`} />
+              </CCol>
+              <CCol xs={12} md={6}>
+                <CWidgetStatsF
+                  className="mb-3"
+                  color="primary"
+                  icon={<FontAwesomeIcon icon={faMotorcycle} />}
+                  title="Grabfood"
+                  value={`Rp. ${formatNumber(grabfood)}`} />
               </CCol>
               <CCol xs={12} md={6}>
                 <CWidgetStatsF
@@ -2210,7 +2315,7 @@ const Report = () => {
         // defaultDate={moment().format("YYYY-MM-DD").toString()}
         />
 
-        <CRow>
+        <CRow className='mb-3'>
           <CCol xs="12" md="12">
             <CCard>
               <CCardHeader>
@@ -2285,6 +2390,27 @@ const Report = () => {
                         <CTableDataCell colSpan={3}><b>Total</b></CTableDataCell>
                         <CTableDataCell><b>{formatNumber(productData.reduce((total, data) => { return total + (data?.harga * data?.qty) }, 0))}</b></CTableDataCell>
                       </CTableRow> */}
+                          <CTableRow>
+                            <CTableHeaderCell>Total Qty</CTableHeaderCell>
+                            <CTableHeaderCell>{totalProductBG}</CTableHeaderCell>
+                          </CTableRow>
+                          <CTableRow>
+                            <CTableHeaderCell>Min. Duration</CTableHeaderCell>
+                            <CTableHeaderCell>{`${minimum?.jam} JAM ${minimum?.menit} MENIT`}</CTableHeaderCell>
+                          </CTableRow>
+                          <CTableRow>
+                            <CTableHeaderCell>Max. Duration</CTableHeaderCell>
+                            <CTableHeaderCell>{`${maximum?.jam} JAM ${maximum?.menit} MENIT`}</CTableHeaderCell>
+                          </CTableRow>
+                          <CTableRow>
+                            <CTableHeaderCell>Average Duration</CTableHeaderCell>
+                            <CTableHeaderCell>{`${average?.jam} JAM ${average?.menit} MENIT`}</CTableHeaderCell>
+                          </CTableRow>
+                          <CTableRow>
+                            <CTableHeaderCell>Total Duration</CTableHeaderCell>
+                            <CTableHeaderCell>{`${totalMinutes?.jam} JAM ${totalMinutes?.menit} MENIT`}</CTableHeaderCell>
+                          </CTableRow>
+
                         </CTableBody>
                       </CTable>
                     </div>
@@ -2295,6 +2421,7 @@ const Report = () => {
             </CCard>
           </CCol>
         </CRow>
+
         <CRow>
           <CCol xs="12" md="12">
             <CCard>
@@ -2364,10 +2491,10 @@ const Report = () => {
                               </CTableRow>
                             ))
                           }
-                          {/* <CTableRow>
-                        <CTableDataCell colSpan={3}><b>Total</b></CTableDataCell>
-                        <CTableDataCell><b>{formatNumber(productData.reduce((total, data) => { return total + (data?.harga * data?.qty) }, 0))}</b></CTableDataCell>
-                      </CTableRow> */}
+                          <CTableRow>
+                            <CTableHeaderCell>Total</CTableHeaderCell>
+                            <CTableHeaderCell>{totalProductCafe}</CTableHeaderCell>
+                          </CTableRow>
                         </CTableBody>
                       </CTable>
                     </div>

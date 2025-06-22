@@ -304,6 +304,7 @@ app.get("/api/storageExpense", authMiddleware, async (req, res) => {
             data.item.push({ ...str })
         }
         data.total = Math.ceil(total)
+        // console.log(data)
         await StorageExpense.create(data);
 
         console.log("✅ Pembuat Laporan Storage Expense selesai.");

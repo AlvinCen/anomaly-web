@@ -517,7 +517,7 @@ const ReportStorage = () => {
                 collection="storageReport" // Use the MongoDB endpoint
                 filter={{}} // Empty filter by default
                 sort={{ createdAt: -1 }} // Sort by newest first
-                isSort={true}
+                // isSort={true}
                 crudAction={[{ name: "Tambah Laporan", key: "create" }]}
                 listStatus={[{ name: "LISTED", color: "success" }, { name: "ARCHIVE", color: "secondary" }]}
                 refresh={refresh}

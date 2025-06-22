@@ -56,7 +56,7 @@ const startWatcher = async () => {
                         // tax: doc.tax || 0,
                         // discount: doc.discount || 0,
                         // typeDiscount: doc.typeDiscount,
-                        category: item.group || "",
+                        category: item.category || item.group || "",
                         createdAt
                     };
                 }
@@ -94,7 +94,7 @@ const startWatcher = async () => {
                     // discount: doc.discount || 0,
                     // typeDiscount: doc.typeDiscount,
                     // totalHarga: hargaItem * (Number(item.qty) || 1),
-                    category: item.group || "",
+                    category: item.category || item.group || "",
                     createdAt
                 };
                 // }
