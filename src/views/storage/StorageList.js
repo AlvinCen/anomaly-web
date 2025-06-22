@@ -203,19 +203,17 @@ const StorageList = () => {
                 var matchExpired = false
                 var storageData = data.find((s) => s._id === nama?._id)
                 var updatedStok = storageData?.stok.map(s => {
-                    if (s.expired === expired) {
-                        matchExpired = true
-                        if (Number(s.harga) === Number(harga))
-                            if (tipe === "qty")
-                                return { ...s, qty: Number(s.qty) + Number(stok), costPerItem: Number(harga) / Number(stok) }; // update qty
-                            else if (tipe === "berat")
-                                return { ...s, berat: Number(s.berat) + Number(berat), costPerItem: Number(harga) / Number(berat) }; // update qty
-                    } else {
-                        return { ...s, costPerItem: berat !== 0 && berat !== undefined ? Number(harga) / Number(berat) : Number(harga) / Number(stok) }; // tetap
-                    }
+                    // if (s.expired === expired) {
+                    //     matchExpired = true
+                    //     if (Number(s.harga) === Number(harga))
+                    //         if (tipe === "qty")
+                    //             return { ...s, qty: Number(s.qty) + Number(stok), costPerItem: Number(harga) / Number(stok) }; // update qty
+                    //         else if (tipe === "berat")
+                    //             return { ...s, berat: Number(s.berat) + Number(berat), costPerItem: Number(harga) / Number(berat) }; // update qty
+                    // } else {
+                    return { ...s, costPerItem: berat !== 0 && berat !== undefined ? Number(harga) / Number(berat) : Number(harga) / Number(stok) }; // tetap
+                    // }
                 });
-
-                console.log(updatedStok)
 
                 const updateQuery = {};
 
@@ -246,6 +244,8 @@ const StorageList = () => {
                     ...(updateQuery.$set || {}),
                     updatedAt: moment().format(),
                 };
+
+                console.log(updateQuery)
 
                 const res = await api.put("/data/update", {
                     collection: "storage",

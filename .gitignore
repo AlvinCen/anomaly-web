@@ -36,3 +36,4 @@ yarn-debug.log*
 yarn-error.log*
 
 .firebase/hosting.cHVibGlj.cache
+server/daemon
