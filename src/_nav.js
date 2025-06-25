@@ -150,12 +150,7 @@ const _nav = [
       }
     ],
   },
-  // {
-  //   component: CNavItem, // 🔥 Gunakan CNavGroup untuk grup menu
-  //   name: 'Member',
-  //   icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
-  //   to: '/manage-member',
-  // },
+
 ]
 
 const _privateNav = [

@@ -391,7 +391,7 @@ const ManageSubscription = () => {
         setLoading(true)
         var dataForm = {
             name: nama,
-            hp: hp,
+            nomor: hp,
             updatedAt: moment().format().toString(),
         }
         try {

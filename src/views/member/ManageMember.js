@@ -398,7 +398,7 @@ const ManageMember = () => {
         setLoading(true)
         var dataForm = {
             name: nama,
-            hp: hp,
+            nomor: hp,
             updatedAt: moment().format().toString(),
         }
         try {
@@ -776,7 +776,6 @@ const ManageMember = () => {
                     { name: "Status", key: "status" },
                     { name: "Action", key: "action" }
                 ]}
-                // headers={['#', 'Nama Customer', 'Status', 'Booking', 'Created At', 'Action']}
                 collection={"member"} // Ambil data dari koleksi "cashiers"
                 filter={{}} // Bisa diberikan filter
                 sort={{ createdAt: -1 }} // Sortir dari terbaru

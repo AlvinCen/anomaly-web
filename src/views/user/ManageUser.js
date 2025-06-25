@@ -1,31 +1,17 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { cilMediaStop, cilPencil, cilPrint } from '@coreui/icons';
+import { Suspense, lazy, useState, useEffect } from 'react';
 
-const CIcon = lazy(() => import('@coreui/icons-react'));
-const CBadge = lazy(() => import('@coreui/react').then(module => ({ default: module.CBadge })));
 const CButton = lazy(() => import('@coreui/react').then(module => ({ default: module.CButton })));
-const CCard = lazy(() => import('@coreui/react').then(module => ({ default: module.CCard })));
-const CCardBody = lazy(() => import('@coreui/react').then(module => ({ default: module.CCardBody })));
-const CCardHeader = lazy(() => import('@coreui/react').then(module => ({ default: module.CCardHeader })));
-const CCardImage = lazy(() => import('@coreui/react').then(module => ({ default: module.CCardImage })));
 const CCol = lazy(() => import('@coreui/react').then(module => ({ default: module.CCol })));
 const CContainer = lazy(() => import('@coreui/react').then(module => ({ default: module.CContainer })));
 const CForm = lazy(() => import('@coreui/react').then(module => ({ default: module.CForm })));
 const CFormCheck = lazy(() => import('@coreui/react').then(module => ({ default: module.CFormCheck })));
 const CFormInput = lazy(() => import('@coreui/react').then(module => ({ default: module.CFormInput })));
 const CFormLabel = lazy(() => import('@coreui/react').then(module => ({ default: module.CFormLabel })));
-const CFormSelect = lazy(() => import('@coreui/react').then(module => ({ default: module.CFormSelect })));
-const CHeader = lazy(() => import('@coreui/react').then(module => ({ default: module.CHeader })));
-const CInputGroup = lazy(() => import('@coreui/react').then(module => ({ default: module.CInputGroup })));
-const CInputGroupText = lazy(() => import('@coreui/react').then(module => ({ default: module.CInputGroupText })));
 const CModal = lazy(() => import('@coreui/react').then(module => ({ default: module.CModal })));
 const CModalBody = lazy(() => import('@coreui/react').then(module => ({ default: module.CModalBody })));
 const CModalFooter = lazy(() => import('@coreui/react').then(module => ({ default: module.CModalFooter })));
 const CModalHeader = lazy(() => import('@coreui/react').then(module => ({ default: module.CModalHeader })));
 const CModalTitle = lazy(() => import('@coreui/react').then(module => ({ default: module.CModalTitle })));
-const CPagination = lazy(() => import('@coreui/react').then(module => ({ default: module.CPagination })));
-const CPaginationItem = lazy(() => import('@coreui/react').then(module => ({ default: module.CPaginationItem })));
-const CProgress = lazy(() => import('@coreui/react').then(module => ({ default: module.CProgress })));
 const CRow = lazy(() => import('@coreui/react').then(module => ({ default: module.CRow })));
 const CSpinner = lazy(() => import('@coreui/react').then(module => ({ default: module.CSpinner })));
 const CTable = lazy(() => import('@coreui/react').then(module => ({ default: module.CTable })));
@@ -36,14 +22,8 @@ const CTableHeaderCell = lazy(() => import('@coreui/react').then(module => ({ de
 const CTableRow = lazy(() => import('@coreui/react').then(module => ({ default: module.CTableRow })));
 
 const AppTable = lazy(() => import('../../components/AppTable'));
-const ReactSelect = lazy(() => import('react-select'));
 
-import moment from 'moment';
-// import { firestore, functions } from '../../Firebase';
-import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2'
-import { useAuth } from '../../AuthContext';
-import { httpsCallable } from 'firebase/functions';
 import api from '../../axiosInstance';
 
 
@@ -68,21 +48,17 @@ const ManageUser = () => {
 
     const [pos, setPos] = useState([
         { id: 1, label: "Order", name: '/order', view: true, update: false, delete: false },
-        // { id: 2, label: "Table", name: '/table', view: true, update: false, delete: false },
     ])
     const [manage, setManage] = useState([
         { id: 2, label: "Table", name: '/table/manage', view: true, update: false, delete: false },
         { id: 3, label: "Table Price", name: '/table/price-list', view: true, update: false, delete: false },
         { id: 4, label: "Storage", name: '/storage/manage', view: true, update: false, delete: false },
         { id: 5, label: "Storage Log", name: '/storage/log', view: true, update: false, delete: false },
-        // { id: 3, label: "Merchandise", name: '/manage-merch', view: true, update: false, delete: false },
         { id: 6, label: "Menu", name: '/manage-menu', view: true, update: false, delete: false },
         { id: 7, label: "Promo", name: '/manage-promo', view: true, update: false, delete: false },
         { id: 8, label: "Member", name: '/member/manage', view: true, update: false, delete: false },
         { id: 9, label: "Member Subscription", name: '/member/subscription', view: true, update: false, delete: false },
     ])
-
-    const { signup } = useAuth();
 
     const handleCheckboxChange = (id, action, value) => {
         // Handle checkbox change logic here
@@ -94,7 +70,6 @@ const ManageUser = () => {
         );
         setPos(updatedPos);
         setManage(updatedManage);
-        // console.log(`Changed ${action} for ID ${id} to ${value}`);
     };
 
     const customStyles = {
@@ -108,9 +83,6 @@ const ManageUser = () => {
             '&:hover': {
                 borderColor: state.isFocused ? '#acabeb' : '#dbdfe6',
             },
-            // '&:hover': {
-            //     borderColor: '#dbdfe6',
-            // },
         }),
         menuPortal: base => ({ ...base, zIndex: 9999 }),
         multiValue: (provided) => ({
@@ -139,11 +111,6 @@ const ManageUser = () => {
             },
         }),
     };
-
-    const roleOptions = [
-        { label: "Admin Pool", value: "admin-pool" },
-        { label: "Admin Cafe", value: "admin-cafe" },
-    ]
 
     useEffect(() => {
         if (Object.keys(hapus).length > 0) {
@@ -192,37 +159,20 @@ const ManageUser = () => {
         if (action === "edit") {
             setNama(edit?.username)
             setDisplay(edit?.name)
-            // var role = edit?.role?.forEach((role)=>{
-            //     return {label: }
-            // })
-            // console.log(edit)
             var tmpPos = pos.map((pos) => {
                 var tmpEdit = edit?.hasAccessPos?.find((data) => data?.name === pos.name)
-                // console.log(pos)
-                // console.log(tmpEdit)
                 if (tmpEdit) return { ...pos, view: tmpEdit?.view, update: tmpEdit?.update, delete: tmpEdit?.delete }
                 else return { ...pos, view: false, update: false, delete: false }
             })
             var tmpManage = manage.map((manage) => {
                 var tmpEdit = edit?.hasAccessManage?.find((data) => data?.name === manage.name)
-                // console.log(pos)
-                // console.log(tmpEdit)
                 if (tmpEdit) return { ...manage, view: tmpEdit?.view, update: tmpEdit?.update, delete: tmpEdit?.delete }
                 else return { ...manage, view: false, update: false, delete: false }
             })
-            // var tmpPos = edit?.hasAccessPos?.map((data, idx) => { return { ...data, id: pos[idx].id, label: pos[idx].label } })
-            // var tmpManage = edit?.hasAccessManage?.map((data, idx) => { return { ...data, id: manage[idx].id, label: manage[idx].label } })
             setPos(tmpPos)
             setManage(tmpManage)
-            // setRole(roleOptions.find((option) => option.value === edit?.role))
         }
     }, [action])
-
-    const extractNumber = (id) => {
-        // Menggunakan regex untuk mengekstrak angka
-        const match = id.match(/\d+/);
-        return match ? parseInt(match[0], 10) : 0;
-    };
 
     const tambahUser = async (e) => {
         e.preventDefault();
@@ -233,13 +183,11 @@ const ManageUser = () => {
 
         var dataForm = {
             name: display,
-            // role: role.value,
             username: nama,
             hasAccessPos: updatedPos,
             hasAccessManage: updatedManage,
             password: password
         };
-        console.log(dataForm)
 
         try {
             const response = await api.post("/auth/register", dataForm);
@@ -275,13 +223,11 @@ const ManageUser = () => {
 
         var dataForm = {
             name: display,
-            // role: role.value,
             username: nama,
             hasAccessPos: updatedPos,
             hasAccessManage: updatedManage,
             password: password
         };
-        console.log(dataForm)
 
         try {
             await api.put("/data/update", {
@@ -578,48 +524,6 @@ const ManageUser = () => {
                             : <CSpinner color="primary" className="float-end" variant="grow" />}
                     </CModalFooter>
                 </CForm>
-            // default:
-            //     return <CForm onSubmit={tambahUser}>
-            //         <CModalHeader>
-            //             <CModalTitle id="actionModal">Tambah User</CModalTitle>
-            //         </CModalHeader>
-            //         <CModalBody style={{ maxHeight: 'calc(100vh - 210px)', overflowY: 'auto' }}>
-            //             <CContainer>
-            //                 <CRow className="mb-3">
-            //                     <CFormLabel className="col-sm-3 col-form-label">Username</CFormLabel>
-            //                     <CCol sm={9}>
-            //                         <CFormInput type="text" placeholder="Input Username" onChange={(e) => setNama(e.target.value)} defaultValue={nama} />
-            //                     </CCol>
-            //                 </CRow>
-            //                 <CRow className="mb-3">
-            //                     <CFormLabel className="col-sm-3 col-form-label">Display Name</CFormLabel>
-            //                     <CCol sm={9}>
-            //                         <CFormInput type="text" placeholder="Input Display Name" onChange={(e) => setDisplay(e.target.value)} defaultValue={display} />
-            //                     </CCol>
-            //                 </CRow>
-            //                 <CRow className="mb-3">
-            //                     <CFormLabel className="col-sm-3 col-form-label">Role</CFormLabel>
-            //                     <CCol sm={9}>
-            //                         <ReactSelect
-            //                             styles={customStyles}
-            //                             isMulti={true}
-            //                             placeholder="Pilih Role"
-            //                             options={roleOptions}
-            //                             value={role}
-            //                             menuPortalTarget={document.body}
-            //                             onChange={(selected) => setRole(selected)}
-            //                             required
-            //                         />
-            //                     </CCol>
-            //                 </CRow>
-            //             </CContainer>
-            //         </CModalBody>
-
-            //         <CModalFooter>
-            //             {!loading ? <CButton color="success" type='submit'>Tambah</CButton>
-            //                 : <CSpinner color="primary" className="float-end" variant="grow" />}
-            //         </CModalFooter>
-            //     </CForm>
         }
     }
     return (
@@ -639,14 +543,12 @@ const ManageUser = () => {
                     { name: "Role", key: "role" },
                     { name: "Action", key: "action" }
                 ]}
-                // headers={['#', 'Nama Customer', 'Status', 'Booking', 'Created At', 'Action']}
-                // query={query(collection(firestore, "user"), where("__name__", "!=", "sNOWPTaePOQxNzwGd7lSyS9jmgP2"))}
-                collection={"user"} // Ambil data dari koleksi "cashiers"
+                collection={"user"}
                 filter={{
                     role: {
-                        $ne :"superadmin"
+                        $ne: "superadmin"
                     }
-                }} // Bisa diberikan filter
+                }} 
                 sort={{ createdAt: -1 }} // Sortir dari terbaru
                 crudAction={[{ name: "Tambah User", key: "add" }]}
                 isManage={true}
@@ -666,14 +568,12 @@ const ManageUser = () => {
                 onClose={() => {
                     setPos([
                         { id: 1, label: "Order", name: '/order', view: true, update: false, delete: false },
-                        // { id: 2, label: "Table", name: '/table', view: true, update: false, delete: false },
                     ]);
                     setManage([
                         { id: 2, label: "Table", name: '/table/manage', view: true, update: false, delete: false },
                         { id: 3, label: "Table Price", name: '/table/price-list', view: true, update: false, delete: false },
                         { id: 4, label: "Storage", name: '/storage/manage', view: true, update: false, delete: false },
                         { id: 5, label: "Storage Log", name: '/storage/log', view: true, update: false, delete: false },
-                        // { id: 3, label: "Merchandise", name: '/manage-merch', view: true, update: false, delete: false },
                         { id: 6, label: "Menu", name: '/manage-menu', view: true, update: false, delete: false },
                         { id: 7, label: "Promo", name: '/manage-promo', view: true, update: false, delete: false },
                         { id: 8, label: "Member", name: '/member/manage', view: true, update: false, delete: false },
