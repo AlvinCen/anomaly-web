@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CButton } from '@coreui/react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+// import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import api from '../axiosInstance';
 // import { firestore } from '../Firebase';
 

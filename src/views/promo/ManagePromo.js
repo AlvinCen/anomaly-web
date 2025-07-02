@@ -4,7 +4,7 @@ import { CBadge, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCol, CColl
 import moment from 'moment';
 import React, { Suspense, useEffect, useRef, useState } from 'react'
 // import { firestore } from '../../Firebase';
-import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
+// import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2'
 import AppTable from '../../components/AppTable';
 import { formatNumber } from 'chart.js/helpers';

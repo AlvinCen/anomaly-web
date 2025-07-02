@@ -5,7 +5,7 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react'
 import ReactToPrint from "react-to-print";
 // import { firestore } from '../../Firebase';
-import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
+// import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2'
 import AppTable from '../../components/AppTable';
 import { formatNumber } from 'chart.js/helpers';

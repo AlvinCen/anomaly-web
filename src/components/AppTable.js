@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { CButton, CCard, CCardHeader, CCardBody, CRow, CCol, CInputGroup, CFormLabel, CFormInput, CInputGroupText, CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell, CBadge, CPagination, CPaginationItem, CImage, CSpinner } from '@coreui/react';
 import moment from 'moment-timezone';
 import Swal from 'sweetalert2';
-import { collection, doc, getDocs, onSnapshot, writeBatch } from 'firebase/firestore';
+// import { collection, doc, getDocs, onSnapshot, writeBatch } from 'firebase/firestore';
 import { formatNumber } from 'chart.js/helpers';
 import { cilPencil, cilShare, cilTrash } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';

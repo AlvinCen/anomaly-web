@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CRow, CCol, CInputGroup, CFormLabel, CFormInput, CInputGroupText } from '@coreui/react';
 import ProductCard from './ProductCard';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+// import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 // import { firestore } from '../Firebase';
 
 const ProductList = ({ addToCart, selectedCategory, data, search }) => {

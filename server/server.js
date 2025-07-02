@@ -11,29 +11,116 @@ const moment = require("moment")
 const cookieParser = require("cookie-parser");
 const fs = require('fs')
 const startWatcher = require("./watcher.js")
+const os = require("os")
+const http = require("http")
+const { Server } = require("socket.io")
 
 const { authMiddleware, SECRET_KEY, REFRESH_SECRET } = require("./middlewares/authMiddleware");
 const User = require("./models/User");
 
 const app = express();
+const server = http.createServer(app)
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+})
 const PORT = process.env.PORT || 5000;
+const SERVER_IP = process.env.SERVER_IP;
+const DB_PORT = process.env.DB_PORT || 27017;
+const DB_NAME = process.env.DB_NAME || "anomaly";
 const uploadDir = path.join(__dirname, 'uploads')
+
+const allowedOrigins = [
+    `http://${process.env.SERVER_IP}`,
+    `http://${process.env.SERVER_IP}:3000`,
+    `http://localhost`,
+    `http://localhost:3000`,
+]
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost', 'http://localhost:3000'], // HANYA mengizinkan request dari http://localhost
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true)
+
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.'
+            return callback(new Error(msg), false)
+        }
+        return callback(null, true)
+    },
     credentials: true // Mengizinkan cookies & authentication headers
 }));
 app.use(express.json());
 app.use(cookieParser()); // Untuk baca refresh token di cookie
 app.use(express.urlencoded({ extended: true }))
 
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces()
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === "IPv4" && !iface.internal) {
+                return iface.address
+            }
+        }
+    }
+    return null;
+}
+
+const myIp = getLocalIpAddress();
+let MONGODB_URI; let configDB;
+
+if (myIp === SERVER_IP) {
+    console.log("Menjalankan sebagai SERVER. Menghubungkan ke MONGODB lokal...")
+    MONGODB_URI = `mongodb://localhost:${DB_PORT}/${DB_NAME}`;
+    configDB = {}
+} else {
+    console.log(`Menjalankan sebagai KLIEN. Menghubungkan ke MONGODB di ${SERVER_IP}...`)
+    MONGODB_URI = `mongodb://${SERVER_IP}:${DB_PORT}/${DB_NAME}`;
+    configDB = {}
+}
+
 // Koneksi MongoDB
-mongoose.connect("mongodb://localhost:27017/anomaly")
+mongoose.connect(MONGODB_URI, configDB)
     .then(async () => {
         console.log("✅ MongoDB Connected")
 
         await startWatcher();
+
+        const db = mongoose.connection.db;
+
+        const watchCollection = (collectionName) => {
+            const collection = db.collection(collectionName)
+            const changeStream = collection.watch();
+
+            changeStream.on('change', (change) => {
+                console.log(`Perubahan terdeteksi di collection ${collectionName}: `, change.operationType)
+
+                    io.emit('dataChange', {
+                        collection: collectionName,
+                        operationType: change.operationType,
+                        documentId: change.documentKey._id,
+                    })
+            })
+        }
+
+        watchCollection("table")
+        watchCollection("tableHistory")
+        // const tableCollection = db.collection("tableHistory")
+
+        // const changeStream = tableCollection.watch();
+
+        // changeStream.on("change", (change) => {
+        //     console.log("Perubahaan table collection", change.operationtype)
+
+        //     io.emit('dataChange', {
+        //         collection: "tableHistory",
+        //         operationType: change.operationType,
+        //         documentId: change.documentKey._id,
+        //     })
+
+        // })
 
         // const storageLog = mongoose.connection.collection("storageLog");
 
@@ -74,6 +161,14 @@ mongoose.connect("mongodb://localhost:27017/anomaly")
 
     })
     .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+io.on("connection", (socket) => {
+    console.log("A user connected: ", socket.id)
+
+    socket.on("disconnect", () => {
+        console.log("User disconeccted: ", socket.id)
+    })
+})
 
 // 🔥 Buat Token
 const generateAccessToken = (user) => jwt.sign({ userId: user._id }, SECRET_KEY, { expiresIn: "30d" });
@@ -347,6 +442,6 @@ app.use("/api", dataRoutes);
 app.use('/uploads', express.static('uploads'))
 
 // ✅ Jalankan server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

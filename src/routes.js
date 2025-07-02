@@ -1,7 +1,7 @@
 import React from 'react'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
-const EditAccount = React.lazy(() => import('./views/dashboard/EditAccount'))
+// const EditAccount = React.lazy(() => import('./views/dashboard/EditAccount'))
 const Table = React.lazy(() => import('./views/table/Table'))
 const Order = React.lazy(() => import('./views/order/Order'))
 const Cafe = React.lazy(() => import('./views/cafe/Cafe'))
@@ -48,7 +48,7 @@ const routes = [
   { path: '/order/edit', name: 'Order Edit', element: OrderCafe },
   { path: '/order/checkout', name: 'Order Checkout', element: Checkout },
   { path: '/order-log', name: 'Order Log', element: OrderLog },
-  { path: '/edit-account', name: 'Edit Account', element: EditAccount },
+  // { path: '/edit-account', name: 'Edit Account', element: EditAccount },
   // { path: '/manage-member', name: 'Manage Member', element: ManageMember },
   { path: '/manage-menu', name: 'Management Menu Cafe', element: ManageMenu },
   { path: '/manage-merch', name: 'Management Merchandise', element: ManageMerch },

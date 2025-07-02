@@ -7,7 +7,7 @@ import CategoryFilter from "../../components/CategoryFilter"
 import Cart from "../../components/Cart"
 import ProductList from "../../components/ProductList"
 // import { firestore } from '../../Firebase';
-import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc, writeBatch } from 'firebase/firestore';
+// import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc, writeBatch } from 'firebase/firestore';
 import Swal from 'sweetalert2'
 import AppTable from '../../components/AppTable';
 import { formatNumber } from 'chart.js/helpers';

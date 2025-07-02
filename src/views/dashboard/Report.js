@@ -80,7 +80,7 @@ import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
 import { NavLink } from 'react-router-dom'
 import AppTable from '../../components/AppTable'
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, Timestamp, where } from 'firebase/firestore'
+// import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, Timestamp, where } from 'firebase/firestore'
 import moment from 'moment-timezone'
 import { formatNumber } from 'chart.js/helpers'
 import Loading from '../../components/Loading'
@@ -1187,22 +1187,209 @@ const Report = () => {
     }
   };
 
-  // // Fungsi untuk menghitung pendapatan
-  // const calculateIncome = async () => {
+  // const fetchFilteredData = async () => {
   //   try {
-  //     const response = await api.post('/reports/income', {
-  //       params: {
-  //         date: moment().format('YYYY-MM-DD')
-  //       }
+  //     var tmpChart = []
+  //     var cashTotal = 0
+  //     var cashlessTotal = 0
+  //     var gofoodTotal = 0
+  //     var grabfoodTotal = 0
+  //     var mStart = moment(startDate).tz("Asia/Jakarta").startOf("day").format();
+  //     var mEnd = moment(endDate).tz("Asia/Jakarta").endOf("day").format();
+
+  //     const tmpData = cashier.filter(cashier => {
+  //       var createdAt = moment(cashier.createdAt).tz("Asia/Jakarta")
+  //       return createdAt.isBetween(mStart, mEnd, undefined, '[]');
   //     });
-  //     setIncome(response.data.totalIncome);
-  //     setToday(response.data.transactionCount);
+
+
+  //     if (tmpData.length > 0) {
+  //       // Hitung total
+  //       const tableTotal = tmpData?.reduce((dailyTotal, cashier) => {
+  //         var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+  //           var total = transaction?.item.reduce((total, item) => {
+  //             // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //             const harga = item?.harga || 0;
+  //             if (item?.tipe) return total + ((Number(harga)) * item?.qty);
+  //             else return total
+  //           }, 0);
+  //           return grandTotal + (total || 0)
+  //         }, 0)
+  //         return (total || 0) + dailyTotal
+  //       }, 0)
+
+  //       const cafeTotal = tmpData?.reduce((dailyTotal, cashier) => {
+  //         var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+  //           var total = transaction?.item.reduce((total, item) => {
+  //             // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //             var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+  //               return total1 + Number(item1.harga);
+  //             }, 0) : 0
+  //             const harga = item?.harga || 0;
+  //             if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+  //             else return total
+  //           }, 0);
+  //           return grandTotal + (total || 0)
+  //         }, 0)
+  //         return (total || 0) + dailyTotal
+  //       }, 0)
+
+  //       const discountTotal = tmpData?.reduce((dailyTotal, cashier) => {
+  //         var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+  //           var cafeTotal = transaction?.item.reduce((total, item) => {
+  //             // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //             var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+  //               return total1 + Number(item1.harga);
+  //             }, 0) : 0
+  //             const harga = item?.harga || 0;
+  //             if (item?.addOns !== undefined) return total + (((Number(harga) + Number(totalAddOn)) * item?.qty) || 0);
+  //             else return total
+  //           }, 0);
+  //           var transactionDiscount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
+  //           return grandTotal + transactionDiscount
+  //         }, 0)
+  //         return (total || 0) + dailyTotal
+  //       }, 0)
+
+  //       const taxTotal = tmpData?.reduce((dailyTotal, cashier) => {
+  //         var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
+  //           var cafeTotal = transaction?.item.reduce((total, item) => {
+  //             // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //             var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+  //               return total1 + Number(item1.harga);
+  //             }, 0) : 0
+  //             const harga = item?.harga || 0;
+  //             if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+  //             else return total
+  //           }, 0);
+  //           var tax = transaction?.tax * (cafeTotal || 0)
+  //           return grandTotal + tax
+  //         }, 0)
+  //         return (total || 0) + dailyTotal
+  //       }, 0)
+
+  //       tmpData?.map((cashier) => {
+  //         cashier?.transaction?.map((transaction) => {
+  //           if (transaction?.splitBill === undefined) {
+  //             if (transaction?.paymentMethod === "cash") {
+  //               var total = transaction?.item.reduce((sum, item) => {
+  //                 // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //                 const harga = item?.harga || 0;
+  //                 return sum + ((Number(harga)) * item?.qty);
+  //               }, 0);
+  //               cashTotal += Number(total || 0)
+  //             }
+  //             else if (transaction?.paymentMethod === "qris" || transaction?.paymentMethod === "debit") {
+  //               var total = transaction?.item.reduce((total, item) => {
+  //                 // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //                 const harga = item?.harga || 0;
+  //                 return total + ((Number(harga)) * item?.qty);
+  //               }, 0);
+  //               cashlessTotal += (total || 0)
+  //             }
+  //             else if (transaction?.paymentMethod === "grabfood") {
+  //               var total = transaction?.item.reduce((total, item) => {
+  //                 // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //                 const harga = item?.harga || 0;
+  //                 return total + ((Number(harga)) * item?.qty);
+  //               }, 0);
+  //               grabfoodTotal += (total || 0)
+  //             }
+  //             else if (transaction?.paymentMethod === "gofood") {
+  //               var total = transaction?.item.reduce((total, item) => {
+  //                 // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+  //                 const harga = item?.harga || 0;
+  //                 return total + ((Number(harga)) * item?.qty);
+  //               }, 0);
+  //               gofoodTotal += (total || 0)
+  //             }
+  //           }
+  //           else {
+  //             // console.log(transaction)
+  //             transaction?.splitBill.map((splitBill) => {
+  //               if (splitBill?.paymentMethod === "cash") {
+  //                 var total = splitBill?.item.reduce((total, item) => {
+  //                   const harga = item?.harga || 0;
+  //                   return total + ((Number(harga)) * item?.qty);
+  //                 }, 0);
+  //                 cashTotal += (total || 0)
+  //               }
+  //               else if (splitBill?.paymentMethod === "qris" || splitBill?.paymentMethod === "debit") {
+  //                 var total = splitBill?.item.reduce((total, item) => {
+  //                   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;More actions
+  //                   const harga = item?.harga || 0;
+  //                   return total + ((Number(harga)) * item?.qty);
+  //                 }, 0);
+  //                 cashlessTotal += (total || 0)
+  //               }
+  //               else if (splitBill?.paymentMethod === "grabfood") {
+  //                 var total = splitBill?.item.reduce((total, item) => {
+  //                   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;More actions
+  //                   const harga = item?.harga || 0;
+  //                   return total + ((Number(harga)) * item?.qty);
+  //                 }, 0);
+  //                 grabfoodTotal += (total || 0)
+  //               }
+  //               else if (splitBill?.paymentMethod === "gofood") {
+  //                 var total = splitBill?.item.reduce((total, item) => {
+  //                   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;More actions
+  //                   const harga = item?.harga || 0;
+  //                   return total + ((Number(harga)) * item?.qty);
+  //                 }, 0);
+  //                 gofoodTotal += (total || 0)
+  //               }
+  //             });
+  //           }
+  //         })
+  //       })
+
+  //       const totalCost = (storageLog || []).reduce((total, storage) => {
+  //         if (storage?.beforeStok > storage?.stok) {
+  //           var usedStok = Number(storage.beforeStok) - Number(storage.stok)
+  //           return total + (usedStok * storage?.costPerItem)
+  //         }
+  //         else return total
+  //       }, 0)
+
+  //       // var tmpPemasukan = tmpCashier?.pemasukan?.reduce((total, data) => { return total + data?.value }, 0)More actions
+  //       cashTotal += tmpPemasukan || 0
+  //       // console.log(totalCost)
+
+  //       setGross((tableTotal + cafeTotal) || 0);
+  //       setNet(((tableTotal + cafeTotal) + taxTotal - discountTotal) || 0);
+  //       setTable(tableTotal || 0);
+  //       setCafe(cafeTotal || 0)
+  //       setCash(cashTotal || 0)
+  //       setCashless(cashlessTotal || 0)
+  //       setGrabfood(grabfoodTotal || 0)
+  //       setGofood(gofoodTotal || 0)
+  //       // setNetCafe(cafeTotal || 0)
+  //       setDiscount(discountTotal || 0)
+  //       setTax(taxTotal || 0)
+  //       setFilterData(tmpData);
+  //     } else {
+  //       setGross(0);
+  //       setNet(0);
+  //       setTable(0);
+  //       setCafe(0)
+  //       setCash(0)
+  //       setCashless(0)
+  //       setGofood(0)
+  //       setGrabfood(0)
+  //       // setNetCafe(0)
+  //       setDiscount(0)
+  //       setTax(0)
+  //       setFilterData([]);
+  //     }
+
+
   //   } catch (error) {
-  //     console.error('Error calculating income:', error);
+  //     console.error('Error fetching filtered data:', error);
   //   }
   // };
 
-  // Fungsi untuk mengambil data dengan filter
+  // Fungsi untuk mengambil data produk dengan filter tanggal
+
   const fetchFilteredData = async () => {
     try {
       var tmpChart = []
@@ -1707,8 +1894,7 @@ const Report = () => {
       console.error('Error fetching filtered data:', error);
     }
   };
-
-  // Fungsi untuk mengambil data produk dengan filter tanggal
+  
   const fetchFilteredProducts = async () => {
     try {
       const response = await api.post('/data', {

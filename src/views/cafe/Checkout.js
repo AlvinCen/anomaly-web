@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import CategoryFilter from "../../components/CategoryFilter"
 import Cart from "../../components/Cart"
 import ProductList from "../../components/ProductList"
-import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc, writeBatch, limit, getDoc } from 'firebase/firestore';
+// import { collection, getDocs, onSnapshot, addDoc, setDoc, doc, query, where, orderBy, deleteDoc, writeBatch, limit, getDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2'
 import AppTable from '../../components/AppTable';
 import { formatNumber } from 'chart.js/helpers';

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CButton, COffcanvas, COffcanvasHeader, COffcanvasBody, CListGroup, CListGroupItem, CRow, CCol, CFormInput, CCard, CCardBody, CCardText, CCloseButton, CFormLabel } from '@coreui/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatNumber } from 'chart.js/helpers';
-import { doc, setDoc } from 'firebase/firestore';
+// import { doc, setDoc } from 'firebase/firestore';
 
 const SidebarCart = ({ cartItems, updateOrder, removeFromCart, updateQuantity, updateNote, inventory }) => {
     const [visible, setVisible] = useState(false);

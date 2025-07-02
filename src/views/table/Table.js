@@ -23,6 +23,9 @@ import { faMotorcycle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import grabFood from "../../assets/images/grabfood-logo.png";
 import goFood from "../../assets/images/gofood-logo.png";
+import io from "socket.io-client";
+
+const socket = io("http://192.168.1.100:5000")
 
 
 const Table = () => {
@@ -866,6 +869,17 @@ const Table = () => {
     };
 
     useEffect(() => {
+        socket.on("dataChange", (changeInfo) => {
+            console.log(`Notifikasi diterima: ${changeInfo.collection} berubah`)
+            setRefresh(!refresh)
+        })
+
+        return () => {
+            socket.off("dataChange")
+        }
+    }, [refresh])
+
+    useEffect(() => {
         var poolData = JSON.parse(sessionStorage.getItem("poolData"))
         if (isBack) {
             if (tmpTable) {
@@ -1419,7 +1433,7 @@ const Table = () => {
                     tax: isTax ? tax / 100 : 0,
                     // service: isService ? service / 100 : 0,
                     typeDiscount,
-                    discount: isDiscount ? Number(10) : 0,
+                    discount: isDiscount ? Number(discount) : 0,
                     orderTotal: Math.ceil((isDiscount ? (typeDiscount ? total * (1 - (discount / 100)) : total - discount) : total) * ((isTax ? tax / 100 : 0) + (isService ? service / 100 : 0))),
                     // item: usePromo && promo ? [{ qty: 1, harga: promo.harga, name: promo.value, sub: [...promo.menu], isPromo: true }] : [],
                     item: orderItem,
@@ -1484,7 +1498,7 @@ const Table = () => {
                     // service: isService ? service / 100 : 0,
                     start: moment().format(),
                     typeDiscount,
-                    discount: isDiscount ? Number(10) : 0,
+                    discount: isDiscount ? Number(discount) : 0,
                     orderTotal: Math.ceil((isDiscount ? (typeDiscount ? total * (1 - discount / 100) : total - discount) : total) * ((isTax ? tax / 100 : 0) + (isService ? service / 100 : 0))),
                     item: orderItem,
                     createdAt: moment().format(),
@@ -2792,7 +2806,8 @@ const Table = () => {
 
 
     useEffect(() => {
-        if (visible) {
+        console.log(visible, action)
+        if (visible && action !== null) {
             var tmpDetail = Object.keys(detail).length > 0 ? detail : edit
             hitungHarga(tmpDetail, tmpDetail?.start, tmpDetail?.end, 0, 0, 0, true)
             setTypeDiscount(tmpDetail?.typeDiscount)
@@ -2801,9 +2816,10 @@ const Table = () => {
             setIsDiscount(tmpDetail?.discount !== undefined && tmpDetail?.discount !== 0)
             setDiscount(tmpDetail?.discount)
         }
-    }, [visible])
+    }, [visible, action])
 
     useEffect(() => {
+        console.log(modal)
         if (modal) {
             hitungHarga(detail, detail?.start, detail?.end, 0, 0, 0, true)
             setTypeDiscount(detail?.typeDiscount)

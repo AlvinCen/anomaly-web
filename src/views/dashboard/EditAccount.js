@@ -32,7 +32,6 @@ import MainChart from './MainChart'
 import { browserName } from 'react-device-detect'
 import { useAuth } from '../../AuthContext'
 import Report from './Report'
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth'
 // import { auth } from '../../Firebase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
