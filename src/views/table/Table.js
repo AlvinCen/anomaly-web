@@ -4706,7 +4706,7 @@ const Table = () => {
                                                 // else if (action === "pay") harga = formatNumber(detail?.harga)
                                                 : formatNumber(hitungHarga(detail, detail?.start, detail?.end, detail?.rate, detail?.rate1))}</CTableDataCell>
                                     </CTableRow>}
-                                {(detail?.splitBill !== undefined && (detail?.status === "PAYMENT" || detail?.status === "CLOSE") ? detail?.unpaidItems : detail?.item)?.map((item, idx) => {
+                                {(detail?.splitBill !== undefined && (detail?.status === "PAYMENT" /*|| detail?.status === "CLOSE"*/) ? detail?.unpaidItems : detail?.item)?.map((item, idx) => {
                                     var itemCafe = item.hasOwnProperty("addOns")
                                     var totalAddOn = itemCafe ? item?.addOns?.reduce((total1, item1) => {
                                         return total1 + Number(item1.harga);
