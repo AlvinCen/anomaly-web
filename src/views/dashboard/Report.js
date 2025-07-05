@@ -1775,7 +1775,7 @@ const Report = () => {
           // console.log(totalCost)
 
           setOtherSales(tmpPemasukan || 0);
-          setNet(((tableTotal + cafeTotal) + taxTotal - discountTotal) || 0);
+          setNet(((tableTotal + cafeTotal + tmpPemasukan) + taxTotal - discountTotal) || 0);
           setTable(tableTotal || 0);
           setCafe(cafeTotal || 0)
           setCash(cashTotal || 0)

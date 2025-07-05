@@ -9,14 +9,23 @@ function formatNumber(num) {
 export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(data?.createdAt).format("DD-MM-YYYY")}.xlsx`, startDate, endDate) => {
     const workbook = new ExcelJS.Workbook();
     if (data.length > 0) {
+        const summaryWorksheet = workbook.addWorksheet(`Summary Laporan ${startDate} - ${endDate}`);
         const worksheet = workbook.addWorksheet(`Laporan ${startDate} - ${endDate}`);
-        // worksheet.addRow(["Saldo Awal : ", formatNumber(data?.saldoAwal)]);
-        // worksheet.addRow(["Saldo Akhir : ", formatNumber(data?.saldoAkhir)]);
-        // worksheet.addRow(["Jam Buka : ", new Date(data.createdAt).toLocaleString()]);
-        // worksheet.addRow(["Jam Tutup : ", new Date(data?.closeAt).toLocaleString()]);
-        // worksheet.addRow([]);
+        var grandTotal = 0
 
         // Header
+        const summaryHeaders = [
+            "Tanggal",
+            "Cash",
+            "QRIS",
+            "Debit",
+            "Grabfood",
+            "Gofood",
+            "Board Game Revenue",
+            "Cafe Revenue",
+            "Total Revenue",
+        ];
+
         const headers = [
             "Tanggal",
             "ReceiptID",
@@ -24,20 +33,25 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             "Meja",
             "Sub Total",
             "Diskon",
-            // data.transaction[0]?.typeDiscount !== undefined ? `Diskon (${data.transaction[0].typeDiscount ? data.transaction[0].discount + "%" : data.transaction[0].discount})` : "Diskon",
             `Pajak`,
             `Payment Method`,
             "Grand Total"
         ];
 
+        summaryWorksheet.addRow(summaryHeaders);
         worksheet.addRow(headers);
 
-        // // Styling header
-        // for (let i = 1; i <= 6; i++) {
-        //     const row = worksheet.getRow(i);
-        //     row.font = { bold: true };
-        // }
-
+        summaryWorksheet.columns = [
+            { width: 22 }, // Tanggal
+            { width: 20 }, // Cash
+            { width: 20 }, // QRIS
+            { width: 20 }, // Debit
+            { width: 20 }, // Grabfood
+            { width: 20 }, // Gofood
+            { width: 20 }, // Board Game
+            { width: 20 }, // Cafe
+            { width: 23 }, // Total
+        ];
         worksheet.columns = [
             { width: 22 }, // Tanggal
             { width: 25 }, // ReceiptID
@@ -50,7 +64,46 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             { width: 20 }, // Subtotal
         ];
 
-        data.map((data) => {
+        var summaryRows = data.flatMap((data) => {
+            var cashTotal = 0
+            var qris = 0
+            var debit = 0
+            var gofoodTotal = 0
+            var grabfoodTotal = 0
+            var boardGameRevenue = 0
+            var cafeRevenue = 0
+
+            const dataWorksheet = workbook.addWorksheet(`Laporan ${moment(data?.createdAt).format("DD-MM-YYYY")}`);
+
+            // Header
+            const headers = [
+                "Tanggal",
+                "ReceiptID",
+                "Meja",
+                "Item",
+                "Qty",
+                "Harga",
+                "Sub Total",
+                "Pajak",
+                "Discount",
+                "Total",
+            ];
+
+            dataWorksheet.addRow(headers);
+
+            dataWorksheet.columns = [
+                { width: 22 }, // Tanggal
+                { width: 25 }, // ReceiptID
+                { width: 15 }, // Meja
+                { width: 35 }, // Item
+                { width: 10 }, // Qty
+                { width: 15 }, // Harga
+                { width: 15 }, // Subtotal
+                { width: 15 }, // Pajak
+                { width: 15 }, // Diskon
+                { width: 22 }, // Total
+            ];
+
             const rows = data.transaction.flatMap((trx) => {
                 if (trx?.splitBill !== undefined) {
                     return trx.splitBill.map((bill) => {
@@ -117,6 +170,52 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 }
             });
 
+            const dataRows = data.transaction.flatMap((trx) => {
+                return trx.item.map((item) => {
+                    if (item?.addOns) {
+                        var totalAddOn = item?.addOns?.reduce((total1, item1) => {
+                            return total1 + Number(item1.harga);
+                        }, 0)
+                        var subTotal = item?.qty * (Number(item?.harga) + Number(totalAddOn))
+                        const diskonNominal = trx.typeDiscount
+                            ? (subTotal * trx.discount) / 100
+                            : trx.discount;
+                        const pajakNominal = (subTotal * trx.tax) || 0;
+                        const total = subTotal - diskonNominal + pajakNominal;
+                        return [
+                            new Date(trx.createdAt).toLocaleString(),
+                            trx.transactionId,
+                            trx.tableName,
+                            item?.name,
+                            item?.qty,
+                            formatNumber(Number(item?.harga) + Number(totalAddOn)),
+                            formatNumber(subTotal),
+                            formatNumber(diskonNominal),
+                            formatNumber(pajakNominal),
+                            formatNumber(total),
+                        ];
+                    } else {
+                        var subTotal = item?.qty * (Number(item?.harga))
+                        const diskonNominal = trx.typeDiscount
+                            ? (subTotal * trx.discount) / 100
+                            : trx.discount;
+                        const total = subTotal - diskonNominal;
+                        return [
+                            new Date(trx.createdAt).toLocaleString(),
+                            trx.transactionId,
+                            trx.tableName,
+                            item?.name,
+                            item?.qty,
+                            formatNumber(item?.harga),
+                            formatNumber(subTotal),
+                            formatNumber(diskonNominal),
+                            "0",
+                            formatNumber(total),
+                        ];
+                    }
+                })
+            });
+
             const rows1 = data.pemasukan.map((trx) => [
                 new Date(trx.createdAt).toLocaleString(),
                 "",
@@ -141,6 +240,9 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 "-" + formatNumber(trx.value),
             ]);
 
+            dataRows.forEach((row) => {
+                dataWorksheet.addRow(row);
+            });
 
             [...rows, ...rows1, ...rows2].forEach((row) => {
                 worksheet.addRow(row);
@@ -150,16 +252,17 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             const totalSubtotal = rows.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
                 rows1.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
                 rows2.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0)
+            grandTotal += totalSubtotal
 
-            const totalRow = ["", "", "", "", "", "", "", "Total", formatNumber(totalSubtotal)];
-            worksheet.addRow(totalRow);
+            const totalDataRow = ["", "", "", "", "", "", "", "", "Total", formatNumber(totalSubtotal)];
+            dataWorksheet.addRow(totalDataRow);
 
             // Bold total
-            const totalRowIndex = worksheet.lastRow.number;
-            worksheet.getRow(totalRowIndex).font = { bold: true };
+            const totalDataRowIndex = dataWorksheet.lastRow.number;
+            dataWorksheet.getRow(totalDataRowIndex).font = { bold: true };
 
             // Apply alignment + border ke semua cell
-            worksheet.eachRow((row, rowNumber) => {
+            dataWorksheet.eachRow((row, rowNumber) => {
                 row.eachCell((cell, colNumber) => {
                     // Border semua sisi
                     cell.border = {
@@ -176,7 +279,187 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 });
             });
 
+            data?.transaction?.map((transaction) => {
+                if (transaction?.splitBill === undefined) {
+                    boardGameRevenue += transaction?.item.reduce((total, item) => {
+                        const harga = item?.harga || 0;
+                        if (item?.tipe) return total + (Number(harga) * item?.qty);
+                        else return total
+                    }, 0);
+                    cafeRevenue += transaction?.item.reduce((total, item) => {
+                        var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                            return total1 + Number(item1.harga);
+                        }, 0) : 0
+                        const harga = item?.harga || 0;
+                        if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+                        else return total
+                    }, 0);
+
+                    if (transaction?.paymentMethod === "cash") {
+                        var total = transaction?.item.reduce((sum, item) => {
+                            // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                            const harga = item?.harga || 0;
+                            return sum + ((Number(harga)) * item?.qty);
+                        }, 0);
+                        cashTotal += Number(total || 0)
+                    }
+                    else if (transaction?.paymentMethod === "qris") {
+                        var total = transaction?.item.reduce((total, item) => {
+                            // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                            const harga = item?.harga || 0;
+                            return total + ((Number(harga)) * item?.qty);
+                        }, 0);
+                        qris += (total || 0)
+                    }
+                    else if (transaction?.paymentMethod === "debit") {
+                        var total = transaction?.item.reduce((total, item) => {
+                            // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                            const harga = item?.harga || 0;
+                            return total + ((Number(harga)) * item?.qty);
+                        }, 0);
+                        debit += (total || 0)
+                    }
+                    else if (transaction?.paymentMethod === "grabfood") {
+                        var total = transaction?.item.reduce((total, item) => {
+                            // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                            const harga = item?.harga || 0;
+                            return total + ((Number(harga)) * item?.qty);
+                        }, 0);
+                        grabfoodTotal += (total || 0)
+                    }
+                    else if (transaction?.paymentMethod === "gofood") {
+                        var total = transaction?.item.reduce((total, item) => {
+                            // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                            const harga = item?.harga || 0;
+                            return total + ((Number(harga)) * item?.qty);
+                        }, 0);
+                        gofoodTotal += (total || 0)
+                    }
+                }
+                else {
+                    // console.log(transaction)
+                    transaction?.splitBill.map((splitBill) => {
+                        boardGameRevenue += splitBill?.item.reduce((total, item) => {
+                            const harga = item?.harga || 0;
+                            if (item?.tipe) return total + (Number(harga) * item?.qty);
+                            else return total
+                        }, 0);
+                        cafeRevenue += splitBill?.item.reduce((total, item) => {
+                            var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                                return total1 + Number(item1.harga);
+                            }, 0) : 0
+                            const harga = item?.harga || 0;
+                            if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
+                            else return total
+                        }, 0);
+                        if (splitBill?.paymentMethod === "cash") {
+                            var total = splitBill?.item.reduce((total, item) => {
+                                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                                const harga = item?.harga || 0;
+                                return total + ((Number(harga)) * item?.qty);
+                            }, 0);
+                            cashTotal += (total || 0)
+                        }
+                        else if (splitBill?.paymentMethod === "qris") {
+                            var total = splitBill?.item.reduce((total, item) => {
+                                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                                const harga = item?.harga || 0;
+                                return total + ((Number(harga)) * item?.qty);
+                            }, 0);
+                            qris += (total || 0)
+                        }
+                        else if (splitBill?.paymentMethod === "debit") {
+                            var total = splitBill?.item.reduce((total, item) => {
+                                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                                const harga = item?.harga || 0;
+                                return total + ((Number(harga)) * item?.qty);
+                            }, 0);
+                            debit += (total || 0)
+                        }
+                        else if (splitBill?.paymentMethod === "grabfood") {
+                            var total = splitBill?.item.reduce((total, item) => {
+                                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                                const harga = item?.harga || 0;
+                                return total + ((Number(harga)) * item?.qty);
+                            }, 0);
+                            grabfoodTotal += (total || 0)
+                        }
+                        else if (splitBill?.paymentMethod === "gofood") {
+                            var total = splitBill?.item.reduce((total, item) => {
+                                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
+                                const harga = item?.harga || 0;
+                                return total + ((Number(harga)) * item?.qty);
+                            }, 0);
+                            gofoodTotal += (total || 0)
+                        }
+                    });
+                }
+            })
+
+            return [[
+                new Date(data.createdAt).toLocaleString(),
+                formatNumber(cashTotal),
+                formatNumber(qris),
+                formatNumber(debit),
+                formatNumber(grabfoodTotal),
+                formatNumber(gofoodTotal),
+                formatNumber(boardGameRevenue),
+                formatNumber(cafeRevenue),
+                formatNumber((boardGameRevenue + cafeRevenue)/* + taxTotal - discountTotal)*/ || 0),
+            ]]; // dibungkus array karena `flatMap`
         })
+
+        const totalRow = ["", "", "", "", "", "", "", "Total", formatNumber(grandTotal)];
+        worksheet.addRow(totalRow);
+
+        const totalRowIndex = worksheet.lastRow.number;
+        worksheet.getRow(totalRowIndex).font = { bold: true };
+
+        worksheet.eachRow((row, rowNumber) => {
+            row.eachCell((cell, colNumber) => {
+                // Border semua sisi
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+
+                // Rata kanan untuk kolom angka (Harga, Diskon, Pajak, Subtotal)
+                if ([5, 6, 7, 8].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'right' };
+                }
+            });
+        });
+
+        summaryRows.forEach((row) => {
+            summaryWorksheet.addRow(row);
+        });
+
+        const totalDataRowSummary = ["", "", "", "", "", "", "", "Total", formatNumber(grandTotal)];
+        summaryWorksheet.addRow(totalDataRowSummary);
+
+        // Bold total
+        const totalDataRowIndexSummmary = summaryWorksheet.lastRow.number;
+        summaryWorksheet.getRow(totalDataRowIndexSummmary).font = { bold: true };
+
+        // Apply alignment + border ke semua cell
+        summaryWorksheet.eachRow((row, rowNumber) => {
+            row.eachCell((cell, colNumber) => {
+                // Border semua sisi
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+
+                // Rata kanan untuk kolom angka (Harga, Diskon, Pajak, Subtotal)
+                if ([5, 6, 7, 8].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'right' };
+                }
+            });
+        });
     }
     else {
         const worksheet = workbook.addWorksheet('Laporan Harian');

@@ -107,7 +107,8 @@ const AppTable = (
         exportStorageExpense(filteredData)
       }
     } else if (startDate && endDate) {
-      const sortedData = filteredData.map(session => {
+      console.log(filterData)
+      const sortedData = filterData?.map(session => {
         return {
           ...session,
           transaction: [...session.transaction].sort((a, b) => {
