@@ -2,10 +2,6 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import moment from 'moment';
 
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
 export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(data?.createdAt).format("DD-MM-YYYY")}.xlsx`, startDate, endDate) => {
     const workbook = new ExcelJS.Workbook();
     if (data.length > 0) {
@@ -43,25 +39,25 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
 
         summaryWorksheet.columns = [
             { width: 22 }, // Tanggal
-            { width: 20 }, // Cash
-            { width: 20 }, // QRIS
-            { width: 20 }, // Debit
-            { width: 20 }, // Grabfood
-            { width: 20 }, // Gofood
-            { width: 20 }, // Board Game
-            { width: 20 }, // Cafe
-            { width: 23 }, // Total
+            { width: 20, style: { numFmt: '#,##0' } }, // Cash
+            { width: 20, style: { numFmt: '#,##0' } }, // QRIS
+            { width: 20, style: { numFmt: '#,##0' } }, // Debit
+            { width: 20, style: { numFmt: '#,##0' } }, // Grabfood
+            { width: 20, style: { numFmt: '#,##0' } }, // Gofood
+            { width: 20, style: { numFmt: '#,##0' } }, // Board Game
+            { width: 20, style: { numFmt: '#,##0' } }, // Cafe
+            { width: 23, style: { numFmt: '#,##0' } }, // Total
         ];
         worksheet.columns = [
             { width: 22 }, // Tanggal
             { width: 25 }, // ReceiptID
             { width: 25 }, // Pelanggan
             { width: 15 }, // Meja
-            { width: 18 }, // Subtotal
-            { width: 15 }, // Diskon
-            { width: 15 }, // Pajak
-            { width: 15 }, // Pajak
-            { width: 20 }, // Subtotal
+            { width: 18, style: { numFmt: '#,##0' } }, // Subtotal
+            { width: 15, style: { numFmt: '#,##0' } }, // Diskon
+            { width: 15, style: { numFmt: '#,##0' } }, // Pajak
+            { width: 15 }, // Payment method
+            { width: 20, style: { numFmt: '#,##0' } }, // Subtotal
         ];
 
         var summaryRows = data.flatMap((data) => {
@@ -84,8 +80,8 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 "Qty",
                 "Harga",
                 "Sub Total",
-                "Pajak",
                 "Discount",
+                "Pajak",
                 "Total",
             ];
 
@@ -97,11 +93,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 { width: 15 }, // Meja
                 { width: 35 }, // Item
                 { width: 10 }, // Qty
-                { width: 15 }, // Harga
-                { width: 15 }, // Subtotal
-                { width: 15 }, // Pajak
-                { width: 15 }, // Diskon
-                { width: 22 }, // Total
+                { width: 15, style: { numFmt: '#,##0' } }, // Harga
+                { width: 15, style: { numFmt: '#,##0' } }, // Subtotal
+                { width: 15, style: { numFmt: '#,##0' } }, // Diskon
+                { width: 15, style: { numFmt: '#,##0' } }, // Pajak
+                { width: 22, style: { numFmt: '#,##0' } }, // Total
             ];
 
             const rows = data.transaction.flatMap((trx) => {
@@ -130,11 +126,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                             trx.transactionId,
                             trx.client?.name || "",
                             trx.tableName,
-                            formatNumber(totalHarga),
-                            formatNumber(diskonNominal),
-                            formatNumber(pajakNominal),
+                            (totalHarga),
+                            (diskonNominal),
+                            (pajakNominal),
                             bill?.paymentMethod,
-                            formatNumber(subtotal),
+                            (subtotal),
                         ];
                     });
                 } else {
@@ -161,11 +157,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                         trx.transactionId,
                         trx.client?.name || "",
                         trx.tableName,
-                        formatNumber(totalHarga),
-                        formatNumber(diskonNominal),
-                        formatNumber(pajakNominal),
+                        (totalHarga),
+                        (diskonNominal),
+                        (pajakNominal),
                         trx?.paymentMethod,
-                        formatNumber(subtotal),
+                        (subtotal),
                     ]]; // dibungkus array karena `flatMap`
                 }
             });
@@ -188,11 +184,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                             trx.tableName,
                             item?.name,
                             item?.qty,
-                            formatNumber(Number(item?.harga) + Number(totalAddOn)),
-                            formatNumber(subTotal),
-                            formatNumber(diskonNominal),
-                            formatNumber(pajakNominal),
-                            formatNumber(total),
+                            (Number(item?.harga) + Number(totalAddOn)),
+                            (subTotal),
+                            (diskonNominal),
+                            (pajakNominal),
+                            (total),
                         ];
                     } else {
                         var subTotal = item?.qty * (Number(item?.harga))
@@ -206,11 +202,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                             trx.tableName,
                             item?.name,
                             item?.qty,
-                            formatNumber(item?.harga),
-                            formatNumber(subTotal),
-                            formatNumber(diskonNominal),
+                            (item?.harga),
+                            (subTotal),
+                            (diskonNominal),
                             "0",
-                            formatNumber(total),
+                            (total),
                         ];
                     }
                 })
@@ -221,11 +217,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 "",
                 trx.note,
                 "",
-                formatNumber(trx.value),
+                (trx.value),
                 "",
                 "",
                 "",
-                formatNumber(trx.value),
+                (trx.value),
             ]);
 
             const rows2 = data.pengeluaran.map((trx) => [
@@ -233,11 +229,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                 "",
                 trx.note,
                 "",
-                "-" + formatNumber(trx.value),
+                "-" + (trx.value),
                 "",
                 "",
                 "",
-                "-" + formatNumber(trx.value),
+                "-" + (trx.value),
             ]);
 
             dataRows.forEach((row) => {
@@ -249,12 +245,12 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             });
 
             // Total baris
-            const totalSubtotal = rows.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
-                rows1.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
-                rows2.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0)
+            const totalSubtotal = rows.reduce((sum, r) => sum + parseInt(r[8]), 0) +
+                rows1.reduce((sum, r) => sum + parseInt(r[8]), 0) +
+                rows2.reduce((sum, r) => sum + parseInt(r[8]), 0)
             grandTotal += totalSubtotal
 
-            const totalDataRow = ["", "", "", "", "", "", "", "", "Total", formatNumber(totalSubtotal)];
+            const totalDataRow = ["", "", "", "", "", "", "", "", "Total", (totalSubtotal)];
             dataWorksheet.addRow(totalDataRow);
 
             // Bold total
@@ -398,18 +394,18 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
 
             return [[
                 new Date(data.createdAt).toLocaleString(),
-                formatNumber(cashTotal),
-                formatNumber(qris),
-                formatNumber(debit),
-                formatNumber(grabfoodTotal),
-                formatNumber(gofoodTotal),
-                formatNumber(boardGameRevenue),
-                formatNumber(cafeRevenue),
-                formatNumber((boardGameRevenue + cafeRevenue)/* + taxTotal - discountTotal)*/ || 0),
+                (cashTotal),
+                (qris),
+                (debit),
+                (grabfoodTotal),
+                (gofoodTotal),
+                (boardGameRevenue),
+                (cafeRevenue),
+                ((boardGameRevenue + cafeRevenue)/* + taxTotal - discountTotal)*/ || 0),
             ]]; // dibungkus array karena `flatMap`
         })
 
-        const totalRow = ["", "", "", "", "", "", "", "Total", formatNumber(grandTotal)];
+        const totalRow = ["", "", "", "", "", "", "", "Total", (grandTotal)];
         worksheet.addRow(totalRow);
 
         const totalRowIndex = worksheet.lastRow.number;
@@ -436,7 +432,7 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             summaryWorksheet.addRow(row);
         });
 
-        const totalDataRowSummary = ["", "", "", "", "", "", "", "Total", formatNumber(grandTotal)];
+        const totalDataRowSummary = ["", "", "", "", "", "", "", "Total", (grandTotal)];
         summaryWorksheet.addRow(totalDataRowSummary);
 
         // Bold total
@@ -463,8 +459,8 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
     }
     else {
         const worksheet = workbook.addWorksheet('Laporan Harian');
-        worksheet.addRow(["Saldo Awal : ", formatNumber(data?.saldoAwal)]);
-        worksheet.addRow(["Saldo Akhir : ", formatNumber(data?.saldoAkhir)]);
+        worksheet.addRow(["Saldo Awal : ", (data?.saldoAwal)]);
+        worksheet.addRow(["Saldo Akhir : ", (data?.saldoAkhir)]);
         worksheet.addRow(["Jam Buka : ", new Date(data.createdAt).toLocaleString()]);
         worksheet.addRow(["Jam Tutup : ", new Date(data?.closeAt).toLocaleString()]);
         worksheet.addRow([]);
@@ -496,11 +492,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             { width: 25 }, // ReceiptID
             { width: 25 }, // Pelanggan
             { width: 15 }, // Meja
-            { width: 18 }, // Subtotal
-            { width: 15 }, // Diskon
-            { width: 15 }, // Pajak
-            { width: 15 }, // Pajak
-            { width: 20 }, // Subtotal
+            { width: 18, style: { numFmt: '#,##0' } }, // Subtotal
+            { width: 15, style: { numFmt: '#,##0' } }, // Diskon
+            { width: 15, style: { numFmt: '#,##0' } }, // Pajak
+            { width: 15 }, // Payment method
+            { width: 20, style: { numFmt: '#,##0' } }, // Subtotal
         ];
 
         const rows = data.transaction.flatMap((trx) => {
@@ -529,11 +525,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                         trx.transactionId,
                         trx.client?.name || "",
                         trx.tableName,
-                        formatNumber(totalHarga),
-                        formatNumber(diskonNominal),
-                        formatNumber(pajakNominal),
+                        (totalHarga),
+                        (diskonNominal),
+                        (pajakNominal),
                         bill?.paymentMethod,
-                        formatNumber(subtotal),
+                        (subtotal),
                     ];
                 });
             } else {
@@ -560,11 +556,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
                     trx.transactionId,
                     trx.client?.name || "",
                     trx.tableName,
-                    formatNumber(totalHarga),
-                    formatNumber(diskonNominal),
-                    formatNumber(pajakNominal),
+                    (totalHarga),
+                    (diskonNominal),
+                    (pajakNominal),
                     trx?.paymentMethod,
-                    formatNumber(subtotal),
+                    (subtotal),
                 ]]; // dibungkus array karena `flatMap`
             }
         });
@@ -574,11 +570,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             "",
             trx.note,
             "",
-            formatNumber(trx.value),
+            (trx.value),
             "",
             "",
             "",
-            formatNumber(trx.value),
+            (trx.value),
         ]);
 
         const rows2 = data.pengeluaran.map((trx) => [
@@ -586,11 +582,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
             "",
             trx.note,
             "",
-            "-" + formatNumber(trx.value),
+            "-" + (trx.value),
             "",
             "",
             "",
-            "-" + formatNumber(trx.value),
+            "-" + (trx.value),
         ]);
 
 
@@ -599,11 +595,11 @@ export const exportToExcel = async (data, fileName = `Laporan-Anomaly-${moment(d
         });
 
         // Total baris
-        const totalSubtotal = rows.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
-            rows1.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0) +
-            rows2.reduce((sum, r) => sum + parseInt(r[8].replace(/\./g, '')), 0)
+        const totalSubtotal = rows.reduce((sum, r) => sum + parseInt(r[8]), 0) +
+            rows1.reduce((sum, r) => sum + parseInt(r[8]), 0) +
+            rows2.reduce((sum, r) => sum + parseInt(r[8]), 0)
 
-        const totalRow = ["", "", "", "", "", "", "", "Total", formatNumber(totalSubtotal)];
+        const totalRow = ["", "", "", "", "", "", "", "Total", (totalSubtotal)];
         worksheet.addRow(totalRow);
 
         // Bold total
@@ -718,7 +714,7 @@ export const exportStorage = async (data, fileName = `Laporan-Storage.xlsx`) => 
 
 
 
-    const totalRow = ["", "", "", "", "Total", formatNumber(totalHarga)];
+    const totalRow = ["", "", "", "", "Total", (totalHarga)];
     worksheet.addRow(totalRow);
 
     // Bold total
@@ -832,7 +828,7 @@ export const exportStorageExpense = async (data, fileName = `Laporan-Storage_Exp
 
     // console.log(totalHarga)
 
-    const totalRow = ["", "", "", "Total", formatNumber(totalHarga)];
+    const totalRow = ["", "", "", "Total", (totalHarga)];
     worksheet.addRow(totalRow);
 
     // Bold total
@@ -966,10 +962,10 @@ export const exportProduct = async (cafe, boardgame, fileName = `Laporan-Product
     }, 0)
 
 
-    const totalRow = ["", "", "", "Total", formatNumber(totalCafe)];
+    const totalRow = ["", "", "", "Total", (totalCafe)];
     worksheet.addRow(totalRow);
 
-    const totalRow1 = ["", "", "", "Total", formatNumber(totalBoardGame)];
+    const totalRow1 = ["", "", "", "Total", (totalBoardGame)];
     worksheet1.addRow(totalRow1);
 
     // Bold total

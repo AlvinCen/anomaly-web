@@ -1436,7 +1436,12 @@ const Report = () => {
               var grandTotal = (tableTotal + cafeTotal) + tax - discount
               return dailyTotal + grandTotal
             }, 0)
-            tmpChart.push(total)
+            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
+              return sum + data?.value
+            }, 0)
+            console.log(pemasukan)
+            tmpChart.push(total + (pemasukan || 0))
+            // tmpChart.push(total)
           })
         } else {
           tmpData?.map((cashier) => {
@@ -1461,7 +1466,11 @@ const Report = () => {
               var grandTotal = (tableTotal + cafeTotal) + tax - discount
               return dailyTotal + grandTotal
             }, 0)
-            tmpChart.push(total)
+            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
+              return sum + data?.value
+            }, 0)
+            console.log(pemasukan)
+            tmpChart.push(total + (pemasukan || 0))
           })
         }
 
@@ -1805,7 +1814,7 @@ const Report = () => {
         const tmpData = cashier
         if (moment.duration(moment(mEnd).diff(moment(mStart))).asDays() < 7) {
           mStart = moment(mEnd).subtract(6, "days").startOf("day").format();
-          console.log(tmpData)
+          // console.log(tmpData)
           tmpData?.map((cashier) => {
             var total = cashier?.transaction?.reduce((dailyTotal, transaction) => {
               var tableTotal = transaction?.item.reduce((total, item) => {
@@ -1828,7 +1837,11 @@ const Report = () => {
               var grandTotal = (tableTotal + cafeTotal) + tax - discount
               return dailyTotal + grandTotal
             }, 0)
-            tmpChart.push(total)
+            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
+              return sum + data?.value
+            }, 0)
+            console.log(pemasukan)
+            tmpChart.push(total + (pemasukan || 0))
           })
         } else {
           tmpData?.map((cashier) => {
@@ -1853,7 +1866,13 @@ const Report = () => {
               var grandTotal = (tableTotal + cafeTotal) + tax - discount
               return dailyTotal + grandTotal
             }, 0)
-            tmpChart.push(total)
+            // tmpChart.push(total)
+            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
+              return sum + data?.value
+            }, 0)
+            console.log(pemasukan)
+
+            tmpChart.push(total + (pemasukan || 0))
           })
         }
 

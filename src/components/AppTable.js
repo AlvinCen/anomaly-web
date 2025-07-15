@@ -176,96 +176,9 @@ const AppTable = (
   }, [data, startDate, endDate])
 
   useEffect(() => {
-    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     setTotalPages(totalPages)
-  }, [data])
-
-  // useEffect(() => {
-  //   const unsubscribeInit = onSnapshot(query, { includeMetadataChanges: true, source: 'cache' }, async (snapshot) => {
-  //     // var tmpData = [...data];
-  //     var tmpData = []
-  //     const source = snapshot.metadata.fromCache ? "local cache" : "server";
-  //     if (!init) {
-  //       snapshot.forEach((tmpDocs) => {
-  //         // console.log(tmpDocs.id)
-  //         const docData = { ...tmpDocs.data(), id: tmpDocs.id };
-  //         tmpData.push(docData);
-  //       });
-  //       setParentData(tmpData)
-  //       setData(tmpData);
-  //       setInit(true);
-  //     }
-  //   });
-
-  //   const unsubscribe = onSnapshot(query, async (snapshot) => {
-  //     // var tmpData = [...data];
-  //     const q = collectionRef
-  //     const refData = []
-  //     if (collectionRef) {
-  //       // Mendapatkan snapshot dari cache (jika tersedia)
-  //       const snapshotRef = await getDocs(q);
-
-  //       // Mengupdate dokumen yang relevan
-  //       snapshotRef.forEach((res) => {
-  //         refData.push({ ...res.data(), id: res?.id })
-  //       });
-  //     }
-
-  //     var tmpData = []
-  //     const source = snapshot.metadata.fromCache ? "local cache" : "server";
-  //     // console.log(snapshot.metadata.hasPendingWrites)
-  //     // console.log(source)
-  //     if (init) {
-  //       {
-  //         snapshot.forEach((tmpDocs) => {
-  //           // console.log(tmpDocs.id)
-  //           if (collectionRef) var refUser = refData?.find((user) => user?.id === tmpDocs.data()?.userId)
-
-  //           const docData = collectionRef ?
-  //             {
-  //               ...tmpDocs.data(),
-  //               id: tmpDocs.id,
-  //               username: refUser?.username ? refUser?.username : "ERROR",
-  //               name: refUser?.name ? refUser?.name : "ERROR"
-  //             } :
-  //             {
-  //               ...tmpDocs.data(),
-  //               id: tmpDocs.id,
-  //             }
-  //             ;
-  //           tmpData.push(docData);
-  //         });
-  //         // console.log(tmpData)
-  //         // if (title === "History") {
-  //         //   console.log(tmpData)
-  //         //   const batch = writeBatch(firestore);
-  //         //   tmpData.forEach((data) => {
-  //         //     if (data?.status === "PAYMENT") {
-  //         //       const docRef = doc(firestore, "booking", data?.id);
-  //         //       batch.update(docRef, { status: "CLOSE" });
-  //         //     }
-  //         //     // var tmpMenu = data.find((menu) => menu?.id === data?.id)
-  //         //     // const docRef = doc(firestore, "menu", data?.id);
-  //         //     // batch.update(docRef, { stok: tmpMenu?.stok });
-  //         //   });
-
-  //         //   // Melakukan commit pada batch
-  //         //   await batch.commit();
-  //         // }
-  //         const sortedData = prioritySort(tmpData)
-  //         // console.log(sortedData)
-  //         setParentData(tmpData)
-  //         setData(tmpData);
-  //       }
-  //     }
-  //   });
-
-  //   return () => {
-  //     unsubscribe();
-  //     unsubscribeInit();
-  //     setLoading(false)
-  //   };
-  // }, [init]);
+  }, [filteredData])
 
   const fetchData = async () => {
     console.time("Fetch Data"); // Mulai timer

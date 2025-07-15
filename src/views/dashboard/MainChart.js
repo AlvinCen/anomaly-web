@@ -146,10 +146,10 @@ const MainChart = ({ activeBtn, data, startDate, endDate }) => {
   useEffect(() => {
     // Buat label dummy 7 hari terakhir
     const labels = Array.from({ length: data.length }).map((_, i) =>
-      moment().subtract(data.length - i - 1, 'days').format('DD-MMMM-YYYY')
+      moment(endDate).subtract(data.length - i - 1, 'days').format('DD-MMMM-YYYY')
     )
     setLabel(labels)
-  }, [data])
+  }, [data, endDate])
 
   return (
     <>

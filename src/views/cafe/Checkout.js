@@ -219,120 +219,6 @@ const Checkout = () => {
         }
     };
 
-    // useEffect(() => {
-    //     const colRefTable = query(
-    //         collection(firestore, "table")
-    //     );
-    //     const unsubscribeInitTable = onSnapshot(colRefTable, { includeMetadataChanges: true, source: 'cache' }, async (snapshot) => {
-    //         // var tmpData = [...data];
-    //         var tmpData = []
-    //         const source = snapshot.metadata.fromCache ? "local cache" : "server";
-    //         // // console.log(snapshot.metadata.hasPendingWrites)
-    //         // // console.log(source)
-    //         if (!initTable) {
-    //             snapshot.forEach((tmpDocs) => {
-    //                 // // console.log(tmpDocs.id)
-    //                 const docData = { id: tmpDocs.id, client: data?.client, category: data?.category, name: data?.name, value: data?.id, label: data?.name };
-    //                 tmpData.push(docData);
-    //             });
-    //             // // console.log(tmpData)
-    //             tmpData = tmpData.sort((a, b) => {
-    //                 const numA = parseInt(a.id.split('-')[1], 10); // Mendapatkan bagian numerik dari id
-    //                 const numB = parseInt(b.id.split('-')[1], 10);
-    //                 return numA - numB
-    //             });
-    //             tmpData.unshift({ value: "dine-in", label: "Dine In" })
-    //             setDataTable(tmpData);
-    //             setInitTable(true);
-    //         }
-    //     });
-
-    //     const unsubscribeTable = onSnapshot(colRefTable, async (snapshot) => {
-    //         // var tmpData = [...data];
-    //         var tmpData = []
-    //         const source = snapshot.metadata.fromCache ? "local cache" : "server";
-    //         // // console.log(snapshot.metadata.hasPendingWrites)
-    //         // // console.log(source)
-    //         if (initTable) {
-    //             snapshot.forEach((tmpDocs) => {
-    //                 // // console.log(tmpDocs.id)
-    //                 const docData = { id: tmpDocs.id, client: data?.client, category: data?.category, name: data?.name, value: data?.id, label: data?.name };
-    //                 if ((data?.category === "pool" && data?.status === "AKTIF") || (data?.category === "cafe" && data?.status === "KOSONG"))
-    //                     tmpData.push(docData);
-    //             })
-    //             // // console.log(tmpData)
-    //             tmpData = tmpData.sort((a, b) => {
-    //                 const numA = parseInt(a.id.split('-')[1], 10); // Mendapatkan bagian numerik dari id
-    //                 const numB = parseInt(b.id.split('-')[1], 10);
-    //                 return numA - numB
-    //             });
-    //             tmpData.unshift({ value: "dine-in", label: "Dine In" })
-    //             setDataTable(tmpData);
-    //         }
-
-    //         // if (initTable) {
-    //         //     // console.log(tmpData)
-    //         //     setData(tmpData);
-    //         // }
-    //         // setInitTable(true);
-    //     });
-
-    //     return () => {
-    //         unsubscribeTable();
-    //         unsubscribeInitTable();
-    //     };
-    // }, [initTable]);
-
-    // useEffect(() => {
-    //     const colRefTable = query(
-    //         collection(firestore, "customer")
-    //     );
-    //     const unsubscribeInitClient = onSnapshot(colRefTable, { includeMetadataChanges: true, source: 'cache' }, async (snapshot) => {
-    //         // var tmpData = [...data];
-    //         var tmpData = []
-    //         const source = snapshot.metadata.fromCache ? "local cache" : "server";
-    //         // // console.log(snapshot.metadata.hasPendingWrites)
-    //         // // console.log(source)
-    //         if (!initClient) {
-    //             snapshot.forEach((tmpDocs) => {
-    //                 // // console.log(tmpDocs.id)
-    //                 const docData = { id: tmpDocs.id, nomor: data?.nomor, value: tmpDocs.id, label: data?.name };
-    //                 tmpData.push(docData);
-    //             });
-    //             // // console.log(tmpData)
-    //             setDataClient(tmpData);
-    //             setInitClient(true);
-    //         }
-    //     });
-
-    //     const unsubscribeClient = onSnapshot(colRefTable, async (snapshot) => {
-    //         // var tmpData = [...data];
-    //         var tmpData = []
-    //         const source = snapshot.metadata.fromCache ? "local cache" : "server";
-    //         // // console.log(snapshot.metadata.hasPendingWrites)
-    //         // // console.log(source)
-    //         if (initClient) {
-    //             snapshot.forEach((tmpDocs) => {
-    //                 // // console.log(tmpDocs.id)
-    //                 const docData = { id: tmpDocs.id, nomor: data?.nomor, value: tmpDocs.id, label: data?.name };
-    //                 tmpData.push(docData);
-    //             })
-    //             setDataClient(tmpData);
-    //         }
-
-    //         // if (initTable) {
-    //         //     // console.log(tmpData)
-    //         //     setData(tmpData);
-    //         // }
-    //         // setInitTable(true);
-    //     });
-
-    //     return () => {
-    //         unsubscribeClient();
-    //         unsubscribeInitClient();
-    //     };
-    // }, [initClient]);
-
     useEffect(() => {
         if (tmpTable !== null && tmpTable !== undefined) {
             // console.log(tmpTable)
@@ -467,6 +353,8 @@ const Checkout = () => {
                 status: "PAYMENT"
             };
 
+            if (table?.value === "grabfood" || table?.value === "gofood") { data.paymentMethod = table?.value }
+
             console.log(data)
             console.log(client)
 
@@ -507,61 +395,6 @@ const Checkout = () => {
                 }
 
                 else throw new Error("Failed")
-
-
-                // await api.put("/data/update", {
-                //     collection: "tableHistory",
-                //     filter: { _id: tmpTable?.id ? tmpTable?.id : (table?.id ? table?.id : table?.value) },
-                //     update: data
-                // });
-
-                // const batch = writeBatch(firestore);
-
-                // const todayDate = moment().utcOffset("+07:00").format("YYYY-MM-DD");
-
-                // const operations = cartItems.map(async (data) => {
-                //     const tmpMenu = menu.find((menu) => menu?.id === data?.id);
-                //     const collectionRef = collection(firestore, "menuReport");
-                //     let docRef = doc(collectionRef); // Referensi dokumen baru secara default
-                //     let tmpData = {
-                //         name: data?.name,
-                //         menuId: data?.id,
-                //         category: tmpMenu?.category?.label,
-                //         hargaModal: tmpMenu?.hargaModal,
-                //         hargaJual: tmpMenu?.hargaJual,
-                //         createdAt: moment().utcOffset("+07:00").format(),
-                //         qty: data?.qty,
-                //     };
-
-
-                //     // Query untuk memeriksa apakah ada dokumen dengan menuId dan tanggal hari ini
-                //     const existingReportQuery = query(
-                //         collection(firestore, "menuReport"),
-                //         where("menuId", "==", data?.id),
-                //         where("createdAt", ">=", `${todayDate}T00:00:00+07:00`),
-                //         where("createdAt", "<=", `${todayDate}T23:59:59+07:00`),
-                //         limit(1)
-                //     );
-
-                //     const querySnapshot = await getDocs(existingReportQuery);
-
-                //     if (!querySnapshot.empty) {
-                //         // Jika dokumen ditemukan, perbarui qty
-                //         querySnapshot.forEach((doc) => {
-                //             const existingQty = doc.data().qty || 0;
-                //             docRef = doc.ref; // Referensi dokumen yang ditemukan
-                //             tmpData = {
-                //                 qty: existingQty + data?.qty, // Perbarui jumlah
-                //             };
-                //         });
-                //     }
-
-                //     batch.set(docRef, tmpData, { merge: true }); // Tambahkan operasi ke batch
-                // });
-
-                // // Tunggu semua operasi selesai sebelum commit
-                // await Promise.all(operations);
-                // await batch.commit();
 
                 if (tipe === "close") {
                     Swal.fire({

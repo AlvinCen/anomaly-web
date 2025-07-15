@@ -223,12 +223,12 @@ const Table = () => {
         var boardGame = table?.item?.reduce((total, item) => {
             if (!item?.addOns) {
                 if (item?.tipe === "durasi" && item?.duration === "00:00") return total
-                else if ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF") return total + (Number(item.harga) * Number(item.qty));
+                else if ((item?.isPay || item?.payAt !== undefined) || table?.status === "AKTIF" || table?.status === "CLOSE") return total + (Number(item.harga) * Number(item.qty));
                 else return total
             } else return total
 
         }, 0);
-        // console.log(boardGame)
+        console.log(boardGame)
         // if (table?.orderTotal) {
         // console.log(table)
         var orderTotal = tmpCafe?.item.reduce((total, item) => {
@@ -564,12 +564,12 @@ const Table = () => {
         //     }
         // });
         // var isPaid = data.item.every(item => item.payAt !== undefined || item.isPay);
-
         if (window?.electron) {
             const collection = "tableHistory";
             const result = await window?.electron.printReceipt({
                 data,
-                paymentMethod: ((data?.tableName === "grabfood" || data?.tableName === "gofood") && paymentMethod === "qris") ? "qris" : paymentMethod,
+                // paymentMethod: ((data?.table === "grabfood" || data?.table === "gofood") && paymentMethod === "qris") ? "qris" : paymentMethod,
+                paymentMethod: (data?.table === "grabfood" || data?.table === "gofood") ? data?.paymentMethod : paymentMethod,
                 pay: inputBayar,
                 changes: kembali ? kembali : 0
             });
@@ -4315,9 +4315,19 @@ const Table = () => {
                                                 <CFormCheck inline id="discount" style={{ marginRight: "10px" }}
                                                     checked={isDiscount}
                                                     onChange={(e) => setIsDiscount(e.target.checked)} />
-                                                <b>Discount</b></CTableDataCell>
-                                            <CTableDataCell>
+                                            </CTableDataCell>
+                                            {/* <CTableDataCell>
                                                 <CInputGroup>
+                                                    {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                        Rp.</span>}
+                                                    <CFormInput type='text' value={formatNumber(10)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
+                                                    {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                        %</span>}
+                                                </CInputGroup>
+                                            </CTableDataCell> */}
+                                            <CTableDataCell style={{ textAlign: "right" }}>
+                                                <CInputGroup style={{ width: "250px" }}>
+                                                    <CFormLabel style={{ marginRight: "10px" }}>Discount </CFormLabel>
                                                     {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         Rp.</span>}
                                                     <CFormInput type='text' value={formatNumber(10)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
@@ -4328,11 +4338,19 @@ const Table = () => {
                                             <CTableDataCell>{formatNumber(diskon)}</CTableDataCell>
                                         </CTableRow>
                                         <CTableRow>
-                                            <CTableDataCell colSpan={4} style={{ textAlign: "right" }} >
+                                            <CTableDataCell colSpan={3} style={{ textAlign: "right" }} >
                                                 <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
                                                     checked={isTax}
                                                     onChange={(e) => setIsTax(e.target.checked)} />
-                                                <b>PB1 {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
+                                            </CTableDataCell>
+                                            <CTableDataCell style={{ textAlign: "right" }}>
+                                                <CInputGroup>
+                                                    <CFormLabel style={{ marginRight: "10px" }}>PB1 </CFormLabel>
+                                                    <CFormInput type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />
+                                                    <span className="input-group-text" id="basic-addon1">
+                                                        %</span>
+                                                </CInputGroup>
+                                            </CTableDataCell>
                                             <CTableDataCell>{isTax ? formatNumber(Math.ceil(orderTotal * (tax / 100))) : 0}</CTableDataCell>
                                         </CTableRow>
                                         {/* <CTableRow>
@@ -4686,7 +4704,7 @@ const Table = () => {
                                             }} /><div>Pay</div></CTableHeaderCell>}
                                     {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
                                     {detail?.status === "AKTIF" && <CTableHeaderCell style={{ width: "100px" }}>Print</CTableHeaderCell>}
-                                    <CTableHeaderCell style={{ width: detail?.status === "PAYMENT" ? "140px" : "100px" }}>Qty</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ width: detail?.status === "PAYMENT" ? "170px" : "100px" }}>Qty</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "400px" }}>Item</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "200px" }}>Harga</CTableHeaderCell>
                                     <CTableHeaderCell style={{ width: "200px" }}>Sub Total</CTableHeaderCell>
@@ -4983,8 +5001,320 @@ const Table = () => {
                                         )
                                     })
                                 }
-                                {detail?.splitBill !== undefined && detail?.splitBill?.map((transaction, idxTx) => {
+                                {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableRow>
+                                    <CTableDataCell colSpan={6} ><CButton color='success' onClick={() => {
+                                        var tmpOrder = { ...detail }
+                                        tmpOrder?.item?.push({ qty: 1, harga: 0, name: "", isNew: true, category: "board game" })
+                                        setDetail(tmpOrder)
+                                    }}>+</CButton></CTableDataCell>
+                                </CTableRow>}
+                                <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Total</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(detail?.splitBill !== undefined ? hitungGrandTotal() : hitungSubTotal())}</CTableDataCell>
+
+                                </CTableRow>
+
+                                <CTableRow>
+                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
+                                        {detail?.status !== "CLOSE" && < CFormCheck inline id="service" style={{ marginRight: "10px" }}
+                                            checked={isDiscount}
+                                            onChange={(e) => {
+                                                setIsDiscount(e.target.checked)
+                                            }}
+                                        />}
+                                    </CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }}>
+                                        {
+                                            detail?.status === "CLOSE" ?
+                                                <CFormLabel>Discount ({typeDiscount ? `${detail?.discount} %` : formatNumber(detail?.discount)})</CFormLabel>
+                                                :
+                                                <>
+                                                    <CInputGroup style={{ width: "250px" }}>
+                                                        <CFormLabel style={{ marginRight: "10px" }}>Discount </CFormLabel>
+                                                        {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                            Rp.</span>}
+                                                        <CFormInput type='text' style={{ width: "50px" }} value={formatNumber(detail?.discount)} onChange={(e) => { setDetail({ ...detail, discount: e.target.value.replace(/,/g, "") }) }} disabled={!isDiscount} />
+                                                        {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
+                                                            %</span>}
+                                                    </CInputGroup>
+                                                </>
+
+                                        }
+                                    </CTableDataCell>
+                                    <CTableDataCell>{(() => {
+                                        let harga = 0;
+                                        var orderTotal = tmpCafe?.item.reduce((total, item) => {
+                                            var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
+                                                return total1 + Number(item1.harga);
+                                            }, 0) : 0
+                                            return total + totalAddOn + Number(item.harga * item.qty);
+                                        }, 0)
+                                        harga += (detail?.splitBill !== undefined && detail?.status === "PAYMENT" ? detail?.unpaidItems : detail?.item)?.reduce((total, item) => {
+
+                                            if (detail?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || detail?.status === "AKTIF")) {
+                                                const totalAddOn = item?.addOns
+                                                    ? item?.addOns?.reduce((total1, item1) => total1 + Number(item1.harga), 0)
+                                                    : 0;
+
+                                                return item?.addOns
+                                                    ? total + ((Number(item.harga) + totalAddOn) * item.qty)
+                                                    : total
+                                            } else
+                                                return total
+                                        }, 0);
+
+                                        harga += orderTotal
+                                        var diskon = isDiscount ? (typeDiscount ? (harga * detail?.discount / 100) : detail?.discount) : 0
+                                        return formatNumber(diskon);
+                                    })()}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
+                                        {detail?.status !== "CLOSE" && <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
+                                            checked={isTax}
+                                            onChange={(e) => {
+                                                setIsTax(e.target.checked)
+                                            }}
+                                        />}
+                                    </CTableDataCell>
+                                    <CTableDataCell style={{ textAlign: "right" }}>
+                                        {
+                                            detail?.status === "CLOSE" ?
+                                                <CFormLabel>PB1 ({detail?.tax < 1 && detail?.tax > 0 ? detail?.tax * 100 : detail?.tax} %)</CFormLabel>
+                                                :
+                                                <>
+                                                    <CInputGroup>
+                                                        <CFormLabel style={{ marginRight: "10px" }}>PB1 </CFormLabel>
+                                                        <CFormInput type='number' min={0} max={20} value={detail?.tax < 1 && detail?.tax > 0 ? detail?.tax * 100 : detail?.tax} onChange={(e) =>
+                                                            setDetail({ ...detail, tax: e.target.value })} />
+                                                        <span className="input-group-text" id="basic-addon1">
+                                                            %</span>
+                                                    </CInputGroup>
+                                                </>
+
+                                        }
+                                    </CTableDataCell>
+                                    <CTableDataCell>{isTax ? formatNumber(hitungOrder(detail) * (detail?.tax < 1 && detail?.tax > 0 ? detail?.tax : detail?.tax / 100)) : 0}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Grand Total</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(hitungGrandTotal())}</CTableDataCell>
+                                </CTableRow>
+                                {detail?.status === "PAYMENT" && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Total Bayar</b></CTableDataCell>
+                                    <CTableDataCell>
+                                        <CFormInput type="text"
+                                            placeholder="Input Total Bayar"
+                                            onChange={(e) => {
+                                                // if (/^\d*$/.test(e.target.value)) setHarga(e.target.value)
+                                                setInputBayar(e.target.value.replace(/,/g, ""))
+                                            }}
+                                            value={formatNumber(inputBayar)}
+                                        />
+                                    </CTableDataCell>
+                                </CTableRow>}
+                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>{titleCase(detail?.paymentMethod)}</b></CTableDataCell>
+                                    <CTableDataCell>
+                                        <b>{formatNumber(detail?.pay)}</b>
+                                    </CTableDataCell>
+                                </CTableRow>}
+                                {(detail?.status === "PAYMENT") && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Kembali</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(Math.max(0, inputBayar - hitungGrandTotal()))}</CTableDataCell>
+                                </CTableRow>}
+                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
+                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
+                                    <CTableDataCell>{formatNumber(Math.max(0, detail?.pay - hitungGrandTotal()))}</CTableDataCell>
+                                </CTableRow>}
+                            </CTableBody>
+                        </CTable>
+                        {(detail?.status === "PAYMENT" && paymentMethod === "cash") && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") && (
+                            <CContainer fluid>
+                                <CCard className="mt-4">
+                                    <CCardHeader className="text-center">
+                                        <strong>Input Nominal Bayar</strong>
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <CRow className="g-3">
+                                            <CCol xs={6}>
+                                                <CCard
+                                                    className="py-4 input-bayar text-center w-100"
+                                                    onClick={() => setInputBayar(prev => Number(prev) + 100000)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <h2>+100.000</h2>
+                                                </CCard>
+                                            </CCol>
+                                            <CCol xs={6}>
+                                                <CCard
+                                                    className="py-4 input-bayar text-center w-100"
+                                                    onClick={() => setInputBayar(prev => Number(prev) + 50000)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <h2>+50.000</h2>
+                                                </CCard>
+                                            </CCol>
+                                            <CCol xs={6}>
+                                                <CCard
+                                                    className="py-4 input-bayar text-center w-100"
+                                                    onClick={() => setInputBayar(prev => Number(prev) + 10000)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <h2>+10.000</h2>
+                                                </CCard>
+                                            </CCol>
+                                            <CCol xs={6}>
+                                                <CCard
+                                                    className="py-4 input-bayar text-center w-100"
+                                                    onClick={() => setInputBayar(0)}
+                                                    style={{ cursor: 'pointer', backgroundColor: '#f8d7da' }}
+                                                >
+                                                    <h2>0</h2>
+                                                </CCard>
+                                            </CCol>
+                                        </CRow>
+                                    </CCardBody>
+                                </CCard>
+                            </CContainer>
+
+                        )}
+
+                        {detail?.status === "PAYMENT" && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") &&
+                            <CContainer className='mb-3'>
+                                <CRow className="justify-content-center mt-5">
+                                    <CCol>
+                                        <CCard>
+                                            <CCardHeader className="text-center">
+                                                <h5>Pilih Metode Pembayaran</h5>
+                                            </CCardHeader>
+                                            <CCardBody>
+                                                <CRow className="mb-3">
+                                                    <CCol md="4" className="mb-3">
+                                                        <CCard
+                                                            className={`p-3 ${paymentMethod === 'cash' ? 'border-primary' : ''}`}
+                                                            onClick={() => handlePaymentChange('cash')}
+                                                            style={{ cursor: 'pointer', height: "125px" }}
+                                                        >
+                                                            <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                    <CIcon icon={cilCash} size="3xl" />
+                                                                    <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Tunai</CFormLabel>
+                                                                </div>
+                                                            </CFormLabel>
+                                                            <p className="small text-muted">Bayar dengan menggunakan uang tunai.</p>
+                                                        </CCard>
+                                                    </CCol>
+                                                    <CCol md="4" className="mb-3">
+                                                        <CCard
+                                                            className={`p-3 ${paymentMethod === 'qris' ? 'border-primary' : ''}`}
+                                                            onClick={() => handlePaymentChange('qris')}
+                                                            style={{ cursor: 'pointer', height: "125px" }}
+                                                        >
+                                                            <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                    <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" />
+                                                                    <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>QRIS</CFormLabel>
+                                                                </div>
+                                                            </CFormLabel>
+                                                            {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
+                                                            <p className="small text-muted">Bayar dengan menggunakan QRIS</p>
+                                                        </CCard>
+                                                    </CCol>
+                                                    <CCol md="4" className="mb-3">
+                                                        <CCard
+                                                            className={`p-3 ${paymentMethod === 'debit' ? 'border-primary' : ''}`}
+                                                            onClick={() => handlePaymentChange('debit')}
+                                                            style={{ cursor: 'pointer', height: "125px" }}
+                                                        >
+                                                            <CFormLabel htmlFor="cash" className="font-weight-bold">
+                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                    {/* <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" /> */}
+                                                                    <CIcon icon={cilCreditCard} size="3xl"></CIcon>
+                                                                    <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Kartu Debit</CFormLabel>
+                                                                </div>
+                                                            </CFormLabel>
+                                                            {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
+                                                            <p className="small text-muted">Bayar dengan menggunakan uang non tunai.</p>
+                                                        </CCard>
+                                                    </CCol>
+                                                </CRow>
+                                            </CCardBody>
+                                        </CCard>
+                                    </CCol>
+                                </CRow>
+                            </CContainer>}
+                        <CModalFooter>
+                            {action === "pay" &&
+                                detail?.status === "PAYMENT" && <CButton className='w-100' color="primary" onClick={(e) => {
+                                    handlePrintClick(detail, inputBayar - hitungGrandTotal())
+                                }}>Bayar</CButton>
+                            }
+                        </CModalFooter>
+                        {detail?.splitBill !== undefined && <CTable>
+                            <CTableHead>
+                                <CTableRow>
+                                    {(action !== "detail" && (detail?.status === "PAYMENT")) && <CTableHeaderCell className='d-flex flex-row' style={{ width: "150px" }}>
+                                        <CFormCheck style={{ marginRight: "10px" }}
+                                            checked={selectAll}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setSelectAll(checked)
+                                                setDetail(prevDetail => {
+                                                    var updatedItem = { ...prevDetail }
+                                                    if (prevDetail?.splitBill !== undefined) {
+                                                        // tmpItem.unpaidItems[idx].isPay = e.target.checked
+                                                        updatedItem = prevDetail.unpaidItems?.map(item => ({
+                                                            ...item,
+                                                            isPay: checked, // atau !item.isPay jika toggle
+                                                        })) || [];
+                                                        return {
+                                                            ...prevDetail,
+                                                            unpaidItems: updatedItem,
+                                                        };
+                                                    } else {
+                                                        // tmpItem.unpaidItems[idx].isPay = e.target.checked
+                                                        updatedItem = prevDetail.item?.map(item => ({
+                                                            ...item,
+                                                            isPay: checked, // atau !item.isPay jika toggle
+                                                        })) || [];
+                                                        return {
+                                                            ...prevDetail,
+                                                            item: updatedItem,
+                                                        };
+                                                    }
+                                                });
+                                            }} /><div>Pay</div></CTableHeaderCell>}
+                                    {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableHeaderCell style={{ width: "110px" }}>Action</CTableHeaderCell>}
+                                    {detail?.status === "AKTIF" && <CTableHeaderCell style={{ width: "100px" }}>Print</CTableHeaderCell>}
+                                    <CTableHeaderCell style={{ width: detail?.status === "PAYMENT" ? "170px" : "100px" }}>Qty</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ width: "400px" }}>Item</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ width: "200px" }}>Harga</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ width: "200px" }}>Sub Total</CTableHeaderCell>
+                                </CTableRow>
+                            </CTableHead>
+                            <CTableBody>
+                                {detail?.splitBill?.map((transaction, idxTx) => {
                                     var element = []
+                                    var orderTotal = transaction?.item?.reduce((sum, item) => {
+                                        var itemCafe = item.hasOwnProperty("addOns")
+                                        var totalAddOn = itemCafe ? item?.addOns?.reduce((total1, item1) => {
+                                            return total1 + Number(item1.harga);
+                                        }, 0) : 0
+                                        var subTotal = ((Number(item?.harga) + Number(itemCafe ? totalAddOn : 0)) * (item?.qty ? item?.qty : 1))
+                                        if (itemCafe) return sum + subTotal;
+                                        else return sum
+                                    }, 0)
+                                    var tableTotal = transaction?.item?.reduce((sum, item) => {
+                                        if (item?.tipe !== undefined) {
+                                            return sum + (Number(item?.harga) * Number(item?.qty));
+                                        } else {
+                                            return sum
+                                        }
+                                    }, 0)
+                                    var taxTotal = transaction?.tax > 0 ? Number(orderTotal) * transaction?.tax : 0
+                                    var discountTotal = (transaction?.typeDiscount ? (Number(orderTotal) * transaction?.discount > 1 ? transaction?.discount / 100 : transaction?.discount) : 0)
+                                    var grandTotal = (orderTotal + tableTotal) + taxTotal - discountTotal
                                     element.push(<CTableHeaderCell colSpan={5}>Transaction - {idxTx + 1} {`(${transaction?.paymentMethod?.toUpperCase()} ${moment(transaction?.createdAt).format("DD MMMM YYYY  HH:mm:ss").toString()})`}</CTableHeaderCell>)
                                     element.push(transaction?.item?.map((item, idx) => {
                                         var itemCafe = item.hasOwnProperty("addOns")
@@ -5190,301 +5520,60 @@ const Table = () => {
                                             </>
                                         )
                                     }))
+                                    element.push(<CTableRow>
+                                        <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Total</b></CTableDataCell>
+                                        <CTableDataCell>{formatNumber(orderTotal + tableTotal)}</CTableDataCell>
+                                    </CTableRow>)
+                                    element.push(
+                                        <CTableRow>
+                                            <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
+
+                                            </CTableDataCell>
+                                            <CTableDataCell style={{ textAlign: "right" }}>
+                                                <CFormLabel style={{ marginRight: "10px" }}>Discount ({transaction?.typeDiscount ? `${transaction?.discount * 100} %` : formatNumber(transaction?.discount)})</CFormLabel>
+                                            </CTableDataCell>
+                                            <CTableDataCell>{formatNumber(discountTotal)}</CTableDataCell>
+                                        </CTableRow>)
+                                    element.push(<CTableRow>
+                                        <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
+
+                                        </CTableDataCell>
+                                        <CTableDataCell style={{ textAlign: "right" }}>
+                                            <CFormLabel style={{ marginRight: "10px" }}>PB1 ({transaction?.tax < 1 && transaction?.tax > 0 ? transaction?.tax * 100 : transaction?.tax} %)</CFormLabel>
+                                        </CTableDataCell>
+                                        <CTableDataCell>{formatNumber(taxTotal)}</CTableDataCell>
+                                    </CTableRow>)
+                                    element.push(<CTableRow>
+                                        <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Grand Total</b></CTableDataCell>
+                                        <CTableDataCell>{formatNumber(grandTotal)}</CTableDataCell>
+                                    </CTableRow>)
+                                    if (detail?.status === "PAYMENT") {
+                                        element.push(<CTableRow>
+                                            <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Total Bayar</b></CTableDataCell>
+                                            <CTableDataCell>
+                                                <CFormLabel>{formatNumber(transaction?.pay)}</CFormLabel>
+                                            </CTableDataCell>
+                                        </CTableRow>)
+                                    }
+                                    if (detail?.paymentMethod !== "" && detail?.pay !== undefined) {
+                                        element.push(<CTableRow>
+                                            <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>{titleCase(transaction?.paymentMethod)}</b></CTableDataCell>
+                                            <CTableDataCell>
+                                                <b>{formatNumber(transaction?.pay)}</b>
+                                            </CTableDataCell>
+                                        </CTableRow>)
+                                    }
+                                    if ((detail?.status === "PAYMENT")) {
+                                        element.push(<CTableRow>
+                                            <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Kembali</b></CTableDataCell>
+                                            <CTableDataCell>{formatNumber(Math.max(0, transaction?.pay - grandTotal))}</CTableDataCell>
+                                        </CTableRow>)
+                                    }
                                     return element
                                 })}
-                                {(action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE")) && <CTableRow>
-                                    <CTableDataCell colSpan={6} ><CButton color='success' onClick={() => {
-                                        var tmpOrder = { ...detail }
-                                        tmpOrder?.item?.push({ qty: 1, harga: 0, name: "", isNew: true, category: "board game" })
-                                        setDetail(tmpOrder)
-                                    }}>+</CButton></CTableDataCell>
-                                </CTableRow>}
-
-                                <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Total</b></CTableDataCell>
-                                    <CTableDataCell>{formatNumber(detail?.splitBill !== undefined ? hitungGrandTotal() : hitungSubTotal())}</CTableDataCell>
-
-                                </CTableRow>
-
-                                <CTableRow>
-                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : (detail?.status === "CLOSE" ? 2 : 3)} style={{ textAlign: "right" }} >
-                                        <CFormCheck inline id="service" style={{ marginRight: "10px" }}
-                                            checked={isDiscount}
-                                            onChange={(e) => {
-                                                setIsDiscount(e.target.checked)
-                                            }}
-                                        />
-                                        <b>Discount</b></CTableDataCell>
-                                    <CTableDataCell>
-                                        <CInputGroup>
-                                            {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
-                                                Rp.</span>}
-                                            <CFormInput type='text' value={formatNumber(detail?.discount)} onChange={(e) => { setDetail({ ...detail, discount: e.target.value.replace(/,/g, "") }) }} disabled={!isDiscount} />
-                                            {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
-                                                %</span>}
-                                        </CInputGroup>
-
-                                    </CTableDataCell>
-                                    <CTableDataCell>{(() => {
-                                        let harga = 0;
-                                        var orderTotal = tmpCafe?.item.reduce((total, item) => {
-                                            var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                                                return total1 + Number(item1.harga);
-                                            }, 0) : 0
-                                            return total + totalAddOn + Number(item.harga * item.qty);
-                                        }, 0)
-                                        harga += (detail?.splitBill !== undefined && detail?.status === "PAYMENT" ? detail?.unpaidItems : detail?.item)?.reduce((total, item) => {
-
-                                            if (detail?.status === "CLOSE" || ((item?.isPay || item?.payAt !== undefined) || detail?.status === "AKTIF")) {
-                                                const totalAddOn = item?.addOns
-                                                    ? item?.addOns?.reduce((total1, item1) => total1 + Number(item1.harga), 0)
-                                                    : 0;
-
-                                                return item?.addOns
-                                                    ? total + ((Number(item.harga) + totalAddOn) * item.qty)
-                                                    : total
-                                            } else
-                                                return total
-                                        }, 0);
-
-                                        harga += orderTotal
-                                        var diskon = isDiscount ? (typeDiscount ? (harga * detail?.discount / 100) : detail?.discount) : 0
-                                        return formatNumber(diskon);
-                                    })()}</CTableDataCell>
-                                </CTableRow>
-                                <CTableRow>
-                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)} style={{ textAlign: "right" }} >
-                                        <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
-                                            checked={isTax}
-                                            onChange={(e) => {
-                                                setIsTax(e.target.checked)
-                                            }}
-                                        />
-                                        <b>PB1 {<input type='number' min={0} max={20} value={detail?.tax < 1 && detail?.tax > 0 ? detail?.tax * 100 : detail?.tax} onChange={(e) =>
-                                            setDetail({ ...detail, tax: e.target.value })} />} %</b></CTableDataCell>
-                                    <CTableDataCell>{isTax ? formatNumber(hitungOrder(detail) * (detail?.tax < 1 && detail?.tax > 0 ? detail?.tax : detail?.tax / 100)) : 0}</CTableDataCell>
-                                </CTableRow>
-                                {/* <CTableRow>
-                                    <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : 3} style={{ textAlign: "right" }} >
-                                        <CFormCheck inline id="service" style={{ marginRight: "10px" }}
-                                            checked={isService}
-                                            onChange={(e) => {
-                                                setIsService(e.target.checked)
-                                            }}
-                                        />
-                                        <b>Service {<input type='number' min={0} max={20} value={service} onChange={(e) => setService(e.target.value)} />} %</b></CTableDataCell>
-                                    <CTableDataCell>{isService ? formatNumber(hitungOrder(detail) * detail?.service) : 0}</CTableDataCell>
-                                </CTableRow> */}
-                                {/* <CTableRow>
-                                    <CTableDataCell colSpan={4} style={{ textAlign: "right" }} >
-                                        <CFormCheck inline id="tax" style={{ marginRight: "10px" }}
-                                            checked={isTax}
-                                            onChange={(e) => setIsTax(e.target.checked)} />
-                                        <b>Tax {<input type='number' min={0} max={20} value={tax} onChange={(e) => setTax(e.target.value)} />} %</b></CTableDataCell>
-                                    <CTableDataCell>{isTax ? formatNumber(Math.ceil(grandTotal * (tax / 100))) : 0}</CTableDataCell>
-                                </CTableRow> */}
-
-                                <CTableRow>
-                                </CTableRow>
-                                {/* {(detail?.service ?? 0) > 0 && (
-                                    <CTableRow>
-                                        <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : 3} style={{ textAlign: "right" }} >
-                                            <b>Service ({detail?.service * 100}%)</b>
-                                        </CTableDataCell>
-                                        <CTableDataCell>{formatNumber(hitungOrder(detail) * detail?.service)}</CTableDataCell>
-                                    </CTableRow>
-                                )} */}
-
-                                <CTableRow>
-                                </CTableRow>
-                                {/* {(detail?.discount ?? 0) > 0 && (
-                                    <CTableRow>
-                                        <CTableDataCell colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 4 : 3} style={{ textAlign: "right" }} >
-                                            <b>Discount</b>
-                                        </CTableDataCell>
-                                        <CTableDataCell>{formatNumber(detail?.discount)}</CTableDataCell>
-                                    </CTableRow>
-                                )} */}
-
-
-                                <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Grand Total</b></CTableDataCell>
-                                    <CTableDataCell>{formatNumber(hitungGrandTotal())}</CTableDataCell>
-                                </CTableRow>
-                                {detail?.status === "PAYMENT" && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Total Bayar</b></CTableDataCell>
-                                    <CTableDataCell>
-                                        <CFormInput type="text"
-                                            placeholder="Input Total Bayar"
-                                            onChange={(e) => {
-                                                // if (/^\d*$/.test(e.target.value)) setHarga(e.target.value)
-                                                setInputBayar(e.target.value.replace(/,/g, ""))
-                                            }}
-                                            value={formatNumber(inputBayar)}
-                                        />
-                                    </CTableDataCell>
-                                </CTableRow>}
-                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>{titleCase(detail?.paymentMethod)}</b></CTableDataCell>
-                                    <CTableDataCell>
-                                        <b>{formatNumber(detail?.pay)}</b>
-                                    </CTableDataCell>
-                                </CTableRow>}
-                                {(detail?.status === "PAYMENT") && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Kembali</b></CTableDataCell>
-                                    <CTableDataCell>{formatNumber(Math.max(0, inputBayar - hitungGrandTotal()))}</CTableDataCell>
-                                </CTableRow>}
-                                {(detail?.paymentMethod !== "" && detail?.pay !== undefined) && <CTableRow>
-                                    <CTableDataCell style={{ textAlign: "right" }} colSpan={3}><b>Kembali</b></CTableDataCell>
-                                    <CTableDataCell>{formatNumber(Math.max(0, detail?.pay - hitungGrandTotal()))}</CTableDataCell>
-                                </CTableRow>}
                             </CTableBody>
-                        </CTable>
+                        </CTable>}
                     </CContainer>
-                    {(detail?.status === "PAYMENT" && paymentMethod === "cash") && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") && (
-                        <CContainer fluid>
-                            <CCard className="mt-4">
-                                <CCardHeader className="text-center">
-                                    <strong>Input Nominal Bayar</strong>
-                                </CCardHeader>
-                                <CCardBody>
-                                    <CRow className="g-3">
-                                        <CCol xs={6}>
-                                            <CCard
-                                                className="py-4 input-bayar text-center w-100"
-                                                onClick={() => setInputBayar(prev => Number(prev) + 100000)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                <h2>+100.000</h2>
-                                            </CCard>
-                                        </CCol>
-                                        <CCol xs={6}>
-                                            <CCard
-                                                className="py-4 input-bayar text-center w-100"
-                                                onClick={() => setInputBayar(prev => Number(prev) + 50000)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                <h2>+50.000</h2>
-                                            </CCard>
-                                        </CCol>
-                                        <CCol xs={6}>
-                                            <CCard
-                                                className="py-4 input-bayar text-center w-100"
-                                                onClick={() => setInputBayar(prev => Number(prev) + 10000)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                <h2>+10.000</h2>
-                                            </CCard>
-                                        </CCol>
-                                        <CCol xs={6}>
-                                            <CCard
-                                                className="py-4 input-bayar text-center w-100"
-                                                onClick={() => setInputBayar(0)}
-                                                style={{ cursor: 'pointer', backgroundColor: '#f8d7da' }}
-                                            >
-                                                <h2>0</h2>
-                                            </CCard>
-                                        </CCol>
-                                    </CRow>
-                                </CCardBody>
-                            </CCard>
-                        </CContainer>
-
-                    )}
-
-                    {detail?.status === "PAYMENT" && (detail?.tableName !== "grabfood" && detail?.tableName !== "gofood") && <CContainer>
-                        <CRow className="justify-content-center mt-5">
-                            <CCol>
-                                <CCard>
-                                    <CCardHeader className="text-center">
-                                        <h5>Pilih Metode Pembayaran</h5>
-                                    </CCardHeader>
-                                    <CCardBody>
-                                        <CRow className="mb-3">
-                                            <CCol md="4" className="mb-3">
-                                                <CCard
-                                                    className={`p-3 ${paymentMethod === 'cash' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('cash')}
-                                                    style={{ cursor: 'pointer', height: "125px" }}
-                                                >
-                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
-                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                            <CIcon icon={cilCash} size="3xl" />
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Tunai</CFormLabel>
-                                                        </div>
-                                                    </CFormLabel>
-                                                    <p className="small text-muted">Bayar dengan menggunakan uang tunai.</p>
-                                                </CCard>
-                                            </CCol>
-                                            <CCol md="4" className="mb-3">
-                                                <CCard
-                                                    className={`p-3 ${paymentMethod === 'qris' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('qris')}
-                                                    style={{ cursor: 'pointer', height: "125px" }}
-                                                >
-                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
-                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                            <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" />
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>QRIS</CFormLabel>
-                                                        </div>
-                                                    </CFormLabel>
-                                                    {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
-                                                    <p className="small text-muted">Bayar dengan menggunakan QRIS</p>
-                                                </CCard>
-                                            </CCol>
-                                            <CCol md="4" className="mb-3">
-                                                <CCard
-                                                    className={`p-3 ${paymentMethod === 'debit' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('debit')}
-                                                    style={{ cursor: 'pointer', height: "125px" }}
-                                                >
-                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
-                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                            {/* <img src={qrisIcon} alt="QRIS" width={80} className="mr-2" /> */}
-                                                            <CIcon icon={cilCreditCard} size="3xl"></CIcon>
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Kartu Debit</CFormLabel>
-                                                        </div>
-                                                    </CFormLabel>
-                                                    {/* <CFormLabel htmlFor="cash" className="font-weight-bold">Non Tunai</CFormLabel> */}
-                                                    <p className="small text-muted">Bayar dengan menggunakan uang non tunai.</p>
-                                                </CCard>
-                                            </CCol>
-                                            {/* <CCol md="4" className="mb-3">
-                                                <CCard
-                                                    className={`p-3 ${paymentMethod === 'grabfood' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('grabfood')}
-                                                    style={{ cursor: 'pointer', height: "125px" }}
-                                                >
-                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
-                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                            <img src={grabFood} alt="GrabFood" width={30} className="mr-2" />
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Grabfood</CFormLabel>
-                                                        </div>
-                                                    </CFormLabel>
-                                                    <p className="small text-muted">Grabfood Order</p>
-                                                </CCard>
-                                            </CCol>
-                                            <CCol md="4" className="mb-3">
-                                                <CCard
-                                                    className={`p-3 ${paymentMethod === 'gofood' ? 'border-primary' : ''}`}
-                                                    onClick={() => handlePaymentChange('gofood')}
-                                                    style={{ cursor: 'pointer', height: "125px" }}
-                                                >
-                                                    <CFormLabel htmlFor="cash" className="font-weight-bold">
-                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                            <img src={goFood} alt="GoFood" width={80} className="mr-2" />
-                                                            <CFormLabel htmlFor="ccard" className="font-weight-bold" style={{ paddingTop: "10px", paddingLeft: "10px" }}>Go-Food</CFormLabel>
-                                                        </div>
-                                                    </CFormLabel>
-                                                    <p className="small text-muted">Go-Food Order</p>
-                                                </CCard>
-                                            </CCol> */}
-                                        </CRow>
-                                    </CCardBody>
-                                </CCard>
-                            </CCol>
-                        </CRow>
-                    </CContainer>}
                     <CModalFooter>
                         {action === "detail" ?
                             <>
@@ -5508,9 +5597,9 @@ const Table = () => {
                             </>
                             :
                             <>
-                                {detail?.status === "PAYMENT" && <CButton color="primary" onClick={(e) => {
+                                {/* {detail?.status === "PAYMENT" && <CButton color="primary" onClick={(e) => {
                                     handlePrintClick(detail, inputBayar - hitungGrandTotal())
-                                }}>Bayar</CButton>}
+                                }}>Bayar</CButton>} */}
                                 <CButton color="danger" onClick={() => setModal(false)}>Close</CButton>
                             </>}
                     </CModalFooter>
