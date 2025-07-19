@@ -136,18 +136,18 @@ const startWatcher = async () => {
                 const tmpCashier = await cashier.findOne({
                     $or: [
                         {
-                            $expr: {
-                                $and: [
-                                    { $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
-                                    { $lt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
-                                ]
-                            },
+                            // $expr: {
+                            //     $and: [
+                            //         { $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
+                            //         { $lt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
+                            //     ]
+                            // },
                             status: "OPEN"
                         },
                         {
-                            $expr: {
-                                $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
-                            },
+                            // $expr: {
+                            //     $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
+                            // },
                             closeAt: { $exists: false }, // atau closeAt: null,
                             status: "OPEN"
                         }
@@ -314,21 +314,41 @@ const startWatcher = async () => {
             }
 
             if (change.operationType === "delete") {
+                // const tmpCashier = await cashier.findOne({
+                //     $or: [
+                //         {
+                //             $expr: {
+                //                 $and: [
+                //                     { $gt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
+                //                     { $lt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
+                //                 ]
+                //             }
+                //         },
+                //         {
+                //             $expr: {
+                //                 $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
+                //             },
+                //             closeAt: { $exists: false } // atau closeAt: null
+                //         }
+                //     ]
+                // })
                 const tmpCashier = await cashier.findOne({
                     $or: [
                         {
-                            $expr: {
-                                $and: [
-                                    { $gt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
-                                    { $lt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
-                                ]
-                            }
+                            // $expr: {
+                            //     $and: [
+                            //         { $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"] },
+                            //         { $lt: [moment(doc.createdAt).startOf("day").tz("Asia/Jakarta").toDate(), "$closeAt"] }
+                            //     ]
+                            // },
+                            status: "OPEN"
                         },
                         {
-                            $expr: {
-                                $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
-                            },
-                            closeAt: { $exists: false } // atau closeAt: null
+                            // $expr: {
+                            //     $gt: [moment(doc.createdAt).endOf("day").tz("Asia/Jakarta").toDate(), "$createdAt"]
+                            // },
+                            closeAt: { $exists: false }, // atau closeAt: null,
+                            status: "OPEN"
                         }
                     ]
                 })
