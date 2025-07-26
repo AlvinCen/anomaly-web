@@ -123,6 +123,8 @@ const Report = () => {
   const [filterProductBoardGame, setFilterProductBoardGame] = useState([]);
   const [productCafe, setProductCafe] = useState([]);
   const [filterProductCafe, setFilterProductCafe] = useState([]);
+  const [foodCafe, setFoodCafe] = useState([]);
+  const [drinkCafe, setDrinkCafe] = useState([]);
 
   const [activeBtn, setActiveBtn] = useState("Day")
   const [activeBtnCafe, setActiveBtnCafe] = useState("Day")
@@ -142,6 +144,8 @@ const Report = () => {
   const [minimum, setMinimum] = useState(0)
   const [maximum, setMaximum] = useState(0)
   const [cafe, setCafe] = useState(0)
+  const [totalFoodCafe, setTotalFoodCafe] = useState(0)
+  const [totalDrinkCafe, setTotalDrinktCafe] = useState(0)
   const [totalProductCafe, setTotalProductCafe] = useState(0)
   const [totalProductBG, setTotalProductBG] = useState(0)
   const [cash, setCash] = useState(0)
@@ -1078,7 +1082,6 @@ const Report = () => {
         sort: {}
       })
 
-
       const data = response.data
       var tableHistory = response1.data
       const productCafe = data.filter((data) => data.category !== "board game")
@@ -1094,6 +1097,7 @@ const Report = () => {
         return total + item?.qty
       }, 0)
 
+      let filterSortCafe = sortedCafe
 
       setProductBoardGame(sortedBoardGame);
       setProductCafe(sortedCafe);
@@ -1124,18 +1128,37 @@ const Report = () => {
         tmpTotalProductCafe = merge?.reduce((total, item) => {
           return total + item?.qty
         }, 0)
-        const sortedData = merge.sort((a, b) => b.qty - a.qty);
-        setFilterProductCafe(sortedData);
+        filterSortCafe = merge.sort((a, b) => b.qty - a.qty);
+        setFilterProductCafe(filterSortCafe);
       }
 
       const { totalMenit, avg, min, max, total } = totalDurasiBoardGame(tableHistory)
+
+      console.log(filterSortCafe)
+
+      const tmpFoodCafe = filterSortCafe?.filter((data) => data?.category === "makanan")
+      const tmpTotalFoodCafe = tmpFoodCafe?.reduce((total, item) => {
+        return total + item?.qty
+      }, 0)
+      const tmpDrinkCafe = filterSortCafe?.filter((data) => data?.category === "minuman")
+      const tmpTotalDrinkCafe = tmpDrinkCafe?.reduce((total, item) => {
+        return total + item?.qty
+      }, 0)
+
+
+      console.log(tmpFoodCafe)
+      console.log(tmpDrinkCafe)
 
       setTotalMinutes(total)
       setAverage(avg)
       setMaximum(max)
       setMinimum(min)
+      setTotalFoodCafe(tmpTotalFoodCafe)
+      setTotalDrinktCafe(tmpTotalDrinkCafe)
       setTotalProductCafe(tmpTotalProductCafe)
       setTotalProductBG(tmpTotalProductBG)
+      setFoodCafe(tmpFoodCafe)
+      setDrinkCafe(tmpDrinkCafe)
     } catch (error) {
       console.error('Error fetching menu reports:', error);
       // Swal.fire('Error', 'Gagal memuat laporan menu', 'error');
@@ -2110,9 +2133,9 @@ const Report = () => {
   }, [activeBtn, cashier, startDate, endDate]);
 
   useEffect(() => {
-    if ((startProductDateBoardGame && endProductDateBoardGame) || (startProductDateCafe && endProductDateCafe)) {
-      fetchProductReport();
-    }
+    // if ((startProductDateBoardGame && endProductDateBoardGame) || (startProductDateCafe && endProductDateCafe)) {
+    fetchProductReport();
+    // }
   }, [startProductDateBoardGame, endProductDateBoardGame, startProductDateCafe, endProductDateCafe]);
 
   const renderModal = () => {
@@ -3114,7 +3137,7 @@ const Report = () => {
                         className='mb-3'
                         value={endProductDateCafe}
                         onChange={(e) => {
-                          setEndProductDate(e.target.value)
+                          setEndProductDateCafe(e.target.value)
                         }}
                         placeholder="End Date"
                         aria-label="End Date"
@@ -3123,48 +3146,76 @@ const Report = () => {
                     </CInputGroup>
                   </CCol>
                 </CRow>
-                {((startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe.length > 0 : productCafe.length > 0) && <CRow>
-                  <CCol>
-                    <div style={{ width: '400px', height: '400px' }}>
-                      <DoughnutChartQty data={(startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe : productCafe} />
-                    </div>
-                  </CCol>
-                  <CCol>
-                    <div style={{ maxHeight: "500px", overflowY: "auto" }} >
-                      <CTable border={1} hover responsive striped bordered>
-                        <CTableHead>
-                          <CTableRow>
-                            <CTableHeaderCell>Nama Item</CTableHeaderCell>
-                            <CTableHeaderCell>Qty</CTableHeaderCell>
-                          </CTableRow>
-                        </CTableHead>
-                        <CTableBody>
-                          {(startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe.map((product, index) => (
-                            <CTableRow key={index}>
-                              <CTableDataCell>{product.name}</CTableDataCell>
-                              <CTableDataCell>{product.qty}</CTableDataCell>
-                              {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
-                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                {((startProductDateCafe !== "" && endProductDateCafe !== "") ? filterProductCafe.length > 0 : productCafe.length > 0) && <>
+                  <CRow className='mb-5'>
+                    <CCol>
+                      <div style={{ width: '400px', height: '400px' }}>
+                        <DoughnutChartQty data={foodCafe} />
+                      </div>
+                    </CCol>
+                    <CCol>
+                      <div style={{ maxHeight: "500px", overflowY: "auto" }} >
+                        <CTable border={1} hover responsive striped bordered>
+                          <CTableHead>
+                            <CTableRow>
+                              <CTableHeaderCell>Nama Makanan</CTableHeaderCell>
+                              <CTableHeaderCell>Qty</CTableHeaderCell>
                             </CTableRow>
-                          )) :
-                            productCafe.map((product, index) => (
+                          </CTableHead>
+                          <CTableBody>
+                            {foodCafe.map((product, index) => (
                               <CTableRow key={index}>
                                 <CTableDataCell>{product.name}</CTableDataCell>
                                 <CTableDataCell>{product.qty}</CTableDataCell>
                                 {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
-                            <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
                               </CTableRow>
                             ))
-                          }
-                          <CTableRow>
-                            <CTableHeaderCell>Total</CTableHeaderCell>
-                            <CTableHeaderCell>{totalProductCafe}</CTableHeaderCell>
-                          </CTableRow>
-                        </CTableBody>
-                      </CTable>
-                    </div>
-                  </CCol>
-                </CRow>}
+                            }
+                            <CTableRow>
+                              <CTableHeaderCell>Total</CTableHeaderCell>
+                              <CTableHeaderCell>{totalFoodCafe}</CTableHeaderCell>
+                            </CTableRow>
+                          </CTableBody>
+                        </CTable>
+                      </div>
+                    </CCol>
+                  </CRow>
+                  <CRow>
+                    <CCol>
+                      <div style={{ width: '400px', height: '400px' }}>
+                        <DoughnutChartQty data={drinkCafe} />
+                      </div>
+                    </CCol>
+                    <CCol>
+                      <div style={{ maxHeight: "500px", overflowY: "auto" }} >
+                        <CTable border={1} hover responsive striped bordered>
+                          <CTableHead>
+                            <CTableRow>
+                              <CTableHeaderCell>Nama Minuman</CTableHeaderCell>
+                              <CTableHeaderCell>Qty</CTableHeaderCell>
+                            </CTableRow>
+                          </CTableHead>
+                          <CTableBody>
+                            {drinkCafe.map((product, index) => (
+                              <CTableRow key={index}>
+                                <CTableDataCell>{product.name}</CTableDataCell>
+                                <CTableDataCell>{product.qty}</CTableDataCell>
+                                {/* <CTableDataCell>{formatNumber(product.harga)}</CTableDataCell>
+                          <CTableDataCell>{formatNumber(product.harga * product.qty)}</CTableDataCell> */}
+                              </CTableRow>
+                            ))
+                            }
+                            <CTableRow>
+                              <CTableHeaderCell>Total</CTableHeaderCell>
+                              <CTableHeaderCell>{totalDrinkCafe}</CTableHeaderCell>
+                            </CTableRow>
+                          </CTableBody>
+                        </CTable>
+                      </div>
+                    </CCol>
+                  </CRow>
+                </>}
 
               </CCardBody>
             </CCard>
