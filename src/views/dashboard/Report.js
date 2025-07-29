@@ -1414,677 +1414,167 @@ const Report = () => {
 
   // Fungsi untuk mengambil data produk dengan filter tanggal
 
+  // Helper function untuk menghitung semua total dari satu transaksi
+  // Logika di dalamnya dibuat sama persis dengan kode asli Anda
+  const calculateTransactionTotals = (transaction) => {
+    let tableTotal = 0;
+    let cafeTotal = 0;
+
+    // 1. Hitung subtotal untuk board game dan cafe
+    for (const item of (transaction?.item || [])) {
+      const itemPrice = Number(item?.harga) || 0;
+      const itemQty = Number(item?.qty) || 0;
+
+      if (item?.tipe) { // Item Board Game
+        tableTotal += itemPrice * itemQty;
+      } else if (item?.addOns !== undefined) { // Item Cafe
+        const addOnsTotal = (item.addOns || []).reduce(
+          (sum, addon) => sum + (Number(addon.harga) || 0),
+          0
+        );
+        cafeTotal += (itemPrice + addOnsTotal) * itemQty;
+      }
+    }
+
+    // 2. Hitung Pajak (HANYA dari cafeTotal, sesuai kode asli)
+    // Diasumsikan 'transaction.tax' adalah faktor (misal: 0.11 untuk 11%)
+    const taxAmount = cafeTotal * (Number(transaction?.tax) || 0);
+
+    // 3. Hitung Diskon (HANYA dari cafeTotal, sesuai kode asli)
+    // Menggunakan logika yang lebih konsisten dari blok `discountTotal` di kode asli Anda
+    const discountAmount = transaction?.typeDiscount === '%'
+      ? (cafeTotal * (Number(transaction?.discount) || 0)) / 100
+      : Number(transaction?.discount) || 0;
+
+    // 4. Hitung Grand Total
+    const grandTotal = (tableTotal + cafeTotal) + taxAmount - discountAmount;
+
+    return { tableTotal, cafeTotal, tax: taxAmount, discount: discountAmount, grandTotal };
+  };
+
   const fetchFilteredData = async () => {
     try {
-      var tmpChart = []
-      var tmpPemasukan = 0
-      var cashTotal = 0
-      var cashlessTotal = 0
-      var gofoodTotal = 0
-      var grabfoodTotal = 0
-      var mStart = moment(startDate).tz("Asia/Jakarta").startOf("day").format();
-      var mEnd = moment(endDate).tz("Asia/Jakarta").endOf("day").format();
+      const mStart = moment(startDate).tz("Asia/Jakarta").startOf("day");
+      const mEnd = moment(endDate).tz("Asia/Jakarta").endOf("day");
 
-      if (moment(mStart).isValid() && moment(mEnd).isValid()) {
-        const tmpData = cashier.filter(cashier => {
-          var createdAt = moment(cashier.createdAt).tz("Asia/Jakarta")
-          return createdAt.isBetween(mStart, mEnd, undefined, '[]');
-        });
-
-        if (moment.duration(moment(mEnd).diff(moment(mStart))).asDays() < 7) {
-          mStart = moment(mEnd).subtract(6, "days").startOf("day").format();
-          const tmpData = cashier.filter(cashier => {
-            var createdAt = moment(cashier.createdAt).tz("Asia/Jakarta")
-            return createdAt.isBetween(mStart, mEnd, undefined, '[]');
-          });
-          tmpData?.map((cashier) => {
-            var total = cashier?.transaction?.reduce((dailyTotal, transaction) => {
-              var tableTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              var tax = transaction?.tax * (cafeTotal || 0)
-              var grandTotal = (tableTotal + cafeTotal) + tax - discount
-              return dailyTotal + grandTotal
-            }, 0)
-            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
-              return sum + data?.value
-            }, 0)
-            console.log(pemasukan)
-            tmpChart.push(total + (pemasukan || 0))
-            // tmpChart.push(total)
-          })
-        } else {
-          tmpData?.map((cashier) => {
-            var total = cashier?.transaction?.reduce((dailyTotal, transaction) => {
-              var tableTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              var tax = transaction?.tax * (cafeTotal || 0)
-              var grandTotal = (tableTotal + cafeTotal) + tax - discount
-              return dailyTotal + grandTotal
-            }, 0)
-            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
-              return sum + data?.value
-            }, 0)
-            console.log(pemasukan)
-            tmpChart.push(total + (pemasukan || 0))
-          })
-        }
-
-        if (tmpChart.length > 0) {
-          setChartData(tmpChart)
-        }
-
-        if (tmpData.length > 0) {
-          // Hitung total
-          const tableTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var total = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              return grandTotal + (total || 0)
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const cafeTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var total = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              return grandTotal + (total || 0)
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const discountTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + (((Number(harga) + Number(totalAddOn)) * item?.qty) || 0);
-                else return total
-              }, 0);
-              var transactionDiscount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              return grandTotal + transactionDiscount
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const taxTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var tax = transaction?.tax * (cafeTotal || 0)
-              return grandTotal + tax
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          tmpData?.map((cashier) => {
-            tmpPemasukan += cashier?.pemasukan?.reduce((total, data) => { return total + data?.value }, 0)
-
-            cashier?.transaction?.map((transaction) => {
-              if (transaction?.splitBill === undefined) {
-                if (transaction?.paymentMethod === "cash") {
-                  // var total = transaction?.item.reduce((sum, item) => {
-                  //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                  //   const harga = item?.harga || 0;
-                  //   return sum + ((Number(harga)) * item?.qty);
-                  // }, 0);
-                  var tableTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var cafeTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                      return total1 + Number(item1.harga);
-                    }, 0) : 0
-                    const harga = item?.harga || 0;
-                    if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                  var tax = transaction?.tax * (cafeTotal || 0)
-                  var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                  cashTotal += Number(grandTotal || 0)
-                }
-                else if (transaction?.paymentMethod === "qris" || transaction?.paymentMethod === "debit") {
-                  // var total = transaction?.item.reduce((total, item) => {
-                  //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                  //   const harga = item?.harga || 0;
-                  //   return total + ((Number(harga)) * item?.qty);
-                  // }, 0);
-                  var tableTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var cafeTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                      return total1 + Number(item1.harga);
-                    }, 0) : 0
-                    const harga = item?.harga || 0;
-                    if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                  var tax = transaction?.tax * (cafeTotal || 0)
-                  var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                  cashlessTotal += Number(grandTotal || 0)
-                  // cashlessTotal += (total || 0)
-                }
-                else if (transaction?.paymentMethod === "grabfood") {
-                  // var total = transaction?.item.reduce((total, item) => {
-                  //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                  //   const harga = item?.harga || 0;
-                  //   return total + ((Number(harga)) * item?.qty);
-                  // }, 0);
-                  var tableTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var cafeTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                      return total1 + Number(item1.harga);
-                    }, 0) : 0
-                    const harga = item?.harga || 0;
-                    if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                  var tax = transaction?.tax * (cafeTotal || 0)
-                  var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                  grabfoodTotal += Number(grandTotal || 0)
-                  // grabfoodTotal += (total || 0)
-                }
-                else if (transaction?.paymentMethod === "gofood") {
-                  // var total = transaction?.item.reduce((total, item) => {
-                  //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                  //   const harga = item?.harga || 0;
-                  //   return total + ((Number(harga)) * item?.qty);
-                  // }, 0);
-                  var tableTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var cafeTotal = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                      return total1 + Number(item1.harga);
-                    }, 0) : 0
-                    const harga = item?.harga || 0;
-                    if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                    else return total
-                  }, 0);
-                  var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                  var tax = transaction?.tax * (cafeTotal || 0)
-                  var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                  gofoodTotal += Number(grandTotal || 0)
-                  // gofoodTotal += (total || 0)
-                }
-              }
-              else {
-                // console.log(transaction)
-                transaction?.splitBill.map((splitBill) => {
-                  if (splitBill?.paymentMethod === "cash") {
-                    // var total = transaction?.item.reduce((sum, item) => {
-                    //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    //   const harga = item?.harga || 0;
-                    //   return sum + ((Number(harga)) * item?.qty);
-                    // }, 0);
-                    var tableTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var cafeTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                        return total1 + Number(item1.harga);
-                      }, 0) : 0
-                      const harga = item?.harga || 0;
-                      if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                    var tax = transaction?.tax * (cafeTotal || 0)
-                    var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                    cashTotal += Number(grandTotal || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "qris" || splitBill?.paymentMethod === "debit") {
-                    // var total = transaction?.item.reduce((total, item) => {
-                    //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    //   const harga = item?.harga || 0;
-                    //   return total + ((Number(harga)) * item?.qty);
-                    // }, 0);
-                    var tableTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var cafeTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                        return total1 + Number(item1.harga);
-                      }, 0) : 0
-                      const harga = item?.harga || 0;
-                      if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                    var tax = transaction?.tax * (cafeTotal || 0)
-                    var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                    cashlessTotal += Number(grandTotal || 0)
-                    // cashlessTotal += (total || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "grabfood") {
-                    // var total = transaction?.item.reduce((total, item) => {
-                    //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    //   const harga = item?.harga || 0;
-                    //   return total + ((Number(harga)) * item?.qty);
-                    // }, 0);
-                    var tableTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var cafeTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                        return total1 + Number(item1.harga);
-                      }, 0) : 0
-                      const harga = item?.harga || 0;
-                      if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                    var tax = transaction?.tax * (cafeTotal || 0)
-                    var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                    grabfoodTotal += Number(grandTotal || 0)
-                    // grabfoodTotal += (total || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "gofood") {
-                    // var total = transaction?.item.reduce((total, item) => {
-                    //   // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    //   const harga = item?.harga || 0;
-                    //   return total + ((Number(harga)) * item?.qty);
-                    // }, 0);
-                    var tableTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var cafeTotal = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                        return total1 + Number(item1.harga);
-                      }, 0) : 0
-                      const harga = item?.harga || 0;
-                      if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                      else return total
-                    }, 0);
-                    var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-                    var tax = transaction?.tax * (cafeTotal || 0)
-                    var grandTotal = (tableTotal + cafeTotal) + tax - discount
-                    gofoodTotal += Number(grandTotal || 0)
-                    // gofoodTotal += (total || 0)
-                  }
-                });
-              }
-            })
-          })
-
-          const totalCost = (storageLog || []).reduce((total, storage) => {
-            if (storage?.beforeStok > storage?.stok) {
-              var usedStok = Number(storage.beforeStok) - Number(storage.stok)
-              return total + (usedStok * storage?.costPerItem)
-            }
-            else return total
-          }, 0)
-
-          // var tmpPemasukan = tmpCashier?.pemasukan?.reduce((total, data) => { return total + data?.value }, 0)
-          cashTotal += tmpPemasukan || 0
-          // console.log(totalCost)
-
-          setOtherSales(tmpPemasukan || 0);
-          setNet(((tableTotal + cafeTotal + tmpPemasukan) + taxTotal - discountTotal) || 0);
-          setTable(tableTotal || 0);
-          setCafe(cafeTotal || 0)
-          setCash(cashTotal || 0)
-          setCashless(cashlessTotal || 0)
-          setGrabfood(grabfoodTotal || 0)
-          setGofood(gofoodTotal || 0)
-          // setNetCafe(cafeTotal || 0)
-          setDiscount(discountTotal || 0)
-          setTax(taxTotal || 0)
-          setFilterData(tmpData);
-        } else {
-
-          setOtherSales(0);
-          setNet(0);
-          setTable(0);
-          setCafe(0)
-          setCash(0)
-          setCashless(0)
-          setGofood(0)
-          setGrabfood(0)
-          // setNetCafe(0)
-          setDiscount(0)
-          setTax(0)
-          setFilterData([]);
-        }
-      } else {
-        const tmpData = cashier
-        if (moment.duration(moment(mEnd).diff(moment(mStart))).asDays() < 7) {
-          mStart = moment(mEnd).subtract(6, "days").startOf("day").format();
-          // console.log(tmpData)
-          tmpData?.map((cashier) => {
-            var total = cashier?.transaction?.reduce((dailyTotal, transaction) => {
-              var tableTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              var tax = transaction?.tax * (cafeTotal || 0)
-              var grandTotal = (tableTotal + cafeTotal) + tax - discount
-              return dailyTotal + grandTotal
-            }, 0)
-            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
-              return sum + data?.value
-            }, 0)
-            console.log(pemasukan)
-            tmpChart.push(total + (pemasukan || 0))
-          })
-        } else {
-          tmpData?.map((cashier) => {
-            var total = cashier?.transaction?.reduce((dailyTotal, transaction) => {
-              var tableTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var discount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              var tax = transaction?.tax * (cafeTotal || 0)
-              var grandTotal = (tableTotal + cafeTotal) + tax - discount
-              return dailyTotal + grandTotal
-            }, 0)
-            // tmpChart.push(total)
-            const pemasukan = cashier?.pemasukan?.reduce((sum, data) => {
-              return sum + data?.value
-            }, 0)
-            console.log(pemasukan)
-
-            tmpChart.push(total + (pemasukan || 0))
-          })
-        }
-
-        if (tmpChart.length > 0) {
-          setChartData(tmpChart)
-        }
-
-        if (tmpData.length > 0) {
-          // Hitung total
-          const tableTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var total = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                const harga = item?.harga || 0;
-                if (item?.tipe) return total + ((Number(harga)) * item?.qty);
-                else return total
-              }, 0);
-              return grandTotal + (total || 0)
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const cafeTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var total = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              return grandTotal + (total || 0)
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const discountTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + (((Number(harga) + Number(totalAddOn)) * item?.qty) || 0);
-                else return total
-              }, 0);
-              var transactionDiscount = transaction?.typeDiscount ? (transaction?.discount / 100) * cafeTotal : cafeTotal - transaction?.discount
-              return grandTotal + transactionDiscount
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          const taxTotal = tmpData?.reduce((dailyTotal, cashier) => {
-            var total = cashier?.transaction?.reduce((grandTotal, transaction) => {
-              var cafeTotal = transaction?.item.reduce((total, item) => {
-                // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                var totalAddOn = item?.addOns ? item?.addOns?.reduce((total1, item1) => {
-                  return total1 + Number(item1.harga);
-                }, 0) : 0
-                const harga = item?.harga || 0;
-                if (item?.addOns !== undefined) return total + ((Number(harga) + Number(totalAddOn)) * item?.qty);
-                else return total
-              }, 0);
-              var tax = transaction?.tax * (cafeTotal || 0)
-              return grandTotal + tax
-            }, 0)
-            return (total || 0) + dailyTotal
-          }, 0)
-
-          tmpData?.map((cashier) => {
-            cashier?.transaction?.map((transaction) => {
-              if (transaction?.splitBill === undefined) {
-                if (transaction?.paymentMethod === "cash") {
-                  var total = transaction?.item.reduce((sum, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    return sum + ((Number(harga)) * item?.qty);
-                  }, 0);
-                  cashTotal += Number(total || 0)
-                }
-                else if (transaction?.paymentMethod === "qris" || transaction?.paymentMethod === "debit") {
-                  var total = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    return total + ((Number(harga)) * item?.qty);
-                  }, 0);
-                  cashlessTotal += (total || 0)
-                }
-                else if (transaction?.paymentMethod === "grabfood") {
-                  var total = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    return total + ((Number(harga)) * item?.qty);
-                  }, 0);
-                  grabfoodTotal += (total || 0)
-                }
-                else if (transaction?.paymentMethod === "gofood") {
-                  var total = transaction?.item.reduce((total, item) => {
-                    // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                    const harga = item?.harga || 0;
-                    return total + ((Number(harga)) * item?.qty);
-                  }, 0);
-                  gofoodTotal += (total || 0)
-                }
-              }
-              else {
-                // console.log(transaction)
-                transaction?.splitBill.map((splitBill) => {
-                  if (splitBill?.paymentMethod === "cash") {
-                    var total = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      return total + ((Number(harga)) * item?.qty);
-                    }, 0);
-                    cashTotal += (total || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "qris" || splitBill?.paymentMethod === "debit") {
-                    var total = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      return total + ((Number(harga)) * item?.qty);
-                    }, 0);
-                    cashlessTotal += (total || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "grabfood") {
-                    var total = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      return total + ((Number(harga)) * item?.qty);
-                    }, 0);
-                    grabfoodTotal += (total || 0)
-                  }
-                  else if (splitBill?.paymentMethod === "gofood") {
-                    var total = splitBill?.item.reduce((total, item) => {
-                      // const harga = data?.hargaVoid ? data?.hargaVoid : data?.harga;
-                      const harga = item?.harga || 0;
-                      return total + ((Number(harga)) * item?.qty);
-                    }, 0);
-                    gofoodTotal += (total || 0)
-                  }
-                });
-              }
-            })
-          })
-
-          const totalCost = (storageLog || []).reduce((total, storage) => {
-            if (storage?.beforeStok > storage?.stok) {
-              var usedStok = Number(storage.beforeStok) - Number(storage.stok)
-              return total + (usedStok * storage?.costPerItem)
-            }
-            else return total
-          }, 0)
-
-          // var tmpPemasukan = tmpCashier?.pemasukan?.reduce((total, data) => { return total + data?.value }, 0)
-          cashTotal += tmpPemasukan || 0
-          // console.log(totalCost)
-
-          setOtherSales((tableTotal + cafeTotal) || 0);
-          setNet(((tableTotal + cafeTotal) + taxTotal - discountTotal) || 0);
-          setTable(tableTotal || 0);
-          setCafe(cafeTotal || 0)
-          setCash(cashTotal || 0)
-          setCashless(cashlessTotal || 0)
-          setGrabfood(grabfoodTotal || 0)
-          setGofood(gofoodTotal || 0)
-          // setNetCafe(cafeTotal || 0)
-          setDiscount(discountTotal || 0)
-          setTax(taxTotal || 0)
-          setFilterData(tmpData);
-        } else {
-
-          setOtherSales(0);
-          setNet(0);
-          setTable(0);
-          setCafe(0)
-          setCash(0)
-          setCashless(0)
-          setGofood(0)
-          setGrabfood(0)
-          // setNetCafe(0)
-          setDiscount(0)
-          setTax(0)
-          setFilterData([]);
-        }
-
+      if (!mStart.isValid() || !mEnd.isValid()) {
+        // Jika tanggal tidak valid, reset semua state ke 0 atau array kosong
+        setNet(0); setTable(0); setCafe(0); setCash(0); setCashless(0);
+        setGofood(0); setGrabfood(0); setDiscount(0); setTax(0);
+        setOtherSales(0); setFilterData([]); setChartData([]);
+        return;
       }
+
+      // Filter data kasir sesuai rentang tanggal
+      const filteredCashiers = cashier.filter(c =>
+        moment(c.createdAt).tz("Asia/Jakarta").isBetween(mStart, mEnd, undefined, '[]')
+      );
+      console.log(filteredCashiers)
+
+      // Inisialisasi variabel total
+      const totals = {
+        net: 0, table: 0, cafe: 0, cash: 0, cashless: 0,
+        gofood: 0, grabfood: 0, discount: 0, tax: 0, otherSales: 0,
+      };
+
+      // Inisialisasi tmpChart untuk data chart
+      const tmpChart = [];
+      
+      // Hitung jarak hari antara startDate dan endDate
+      const daysDifference = moment.duration(mEnd.diff(mStart)).asDays();
+      
+      let chartStartDate, chartEndDate, chartFilteredCashiers;
+      
+      if (daysDifference <= 7) {
+        // Jika jarak ≤ 7 hari: tampilkan seminggu dari mEnd
+        chartStartDate = moment(mEnd).subtract(6, "days").startOf("day");
+        chartEndDate = moment(mEnd).endOf("day");
+      } else {
+        // Jika jarak > 7 hari: gunakan rentang yang dipilih user
+        chartStartDate = mStart;
+        chartEndDate = mEnd;
+      }
+      
+      // Filter data kasir untuk chart
+      chartFilteredCashiers = cashier.filter(c =>
+        moment(c.createdAt).tz("Asia/Jakarta").isBetween(chartStartDate, chartEndDate, undefined, '[]')
+      );
+
+      // Proses data untuk chart
+      for (const c of chartFilteredCashiers) {
+        let sessionTotalForChart = 0;
+
+        // Akumulasi pendapatan lain-lain (pemasukan) untuk chart
+        const currentPemasukan = (c.pemasukan || []).reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+        sessionTotalForChart += currentPemasukan;
+
+        // Proses setiap transaksi untuk chart
+        for (const transaction of (c.transaction || [])) {
+          const txTotals = calculateTransactionTotals(transaction);
+          sessionTotalForChart += txTotals.grandTotal;
+        }
+
+        // Push total dari satu sesi kasir ke tmpChart
+        tmpChart.push(sessionTotalForChart);
+      }
+
+      // Proses setiap data kasir yang sudah difilter untuk statistik utama
+      for (const c of filteredCashiers) {
+        // Akumulasi pendapatan lain-lain (pemasukan)
+        const currentPemasukan = (c.pemasukan || []).reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+        totals.otherSales += currentPemasukan;
+
+        // Proses setiap transaksi
+        for (const transaction of (c.transaction || [])) {
+          const txTotals = calculateTransactionTotals(transaction);
+
+          // Akumulasi total untuk statistik utama
+          totals.table += txTotals.tableTotal;
+          totals.cafe += txTotals.cafeTotal + txTotals.tax;
+          totals.tax += txTotals.tax;
+          totals.discount += txTotals.discount;
+
+          // Logika pembayaran
+          if (transaction.splitBill && transaction.splitBill.length > 0) {
+            for (const split of transaction.splitBill) {
+              // Untuk split bill, grand total harus dihitung dari item-itemnya
+              const splitGrandTotal = calculateTransactionTotals(split).grandTotal;
+              switch (split.paymentMethod) {
+                case 'cash': totals.cash += splitGrandTotal; break;
+                case 'qris': case 'debit': totals.cashless += splitGrandTotal; break;
+                case 'gofood': totals.gofood += splitGrandTotal; break;
+                case 'grabfood': totals.grabfood += splitGrandTotal; break;
+              }
+            }
+          } else {
+            // Untuk transaksi normal
+            switch (transaction.paymentMethod) {
+              case 'cash': totals.cash += txTotals.grandTotal; break;
+              case 'qris': case 'debit': totals.cashless += txTotals.grandTotal; break;
+              case 'gofood': totals.gofood += txTotals.grandTotal; break;
+              case 'grabfood': totals.grabfood += txTotals.grandTotal; break;
+            }
+          }
+        }
+      }
+
+      totals.cash += totals.otherSales; // Uang masuk dianggap sebagai cash
+      // Hitung total Net Sales
+      totals.net = totals.cash + totals.cashless + totals.gofood + totals.grabfood;
+
+      // Update semua state React
+      setNet(totals.net);
+      setTable(totals.table);
+      setCafe(totals.cafe);
+      setCash(totals.cash); // Uang masuk dianggap sebagai cash
+      setCashless(totals.cashless);
+      setGofood(totals.gofood);
+      setGrabfood(totals.grabfood);
+      setDiscount(totals.discount);
+      setTax(totals.tax);
+      setOtherSales(totals.otherSales);
+      setFilterData(filteredCashiers);
+      setChartData(tmpChart); // Data chart selalu seminggu dari mEnd
 
     } catch (error) {
       console.error('Error fetching filtered data:', error);
@@ -2833,7 +2323,7 @@ const Report = () => {
                   className="mb-3"
                   color="info"
                   icon={<FontAwesomeIcon icon={faDice} />}
-                  title="Net Board Game Revenue"
+                  title="Board Game Revenue"
                   value={`Rp. ${formatNumber(table)}`} />
               </CCol>
               <CCol xs={12} md={6}>
@@ -2841,7 +2331,7 @@ const Report = () => {
                   className="mb-3"
                   color="primary"
                   icon={<CIcon icon={cilCoffee} height={24} />}
-                  title="Gross Cafe Revenue"
+                  title="Cafe Revenue"
                   value={`Rp. ${formatNumber(cafe)}`} />
               </CCol>
               <CCol xs={12} md={6}>

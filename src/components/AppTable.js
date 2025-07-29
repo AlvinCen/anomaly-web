@@ -109,9 +109,11 @@ const AppTable = (
     } else if (startDate && endDate) {
       console.log(filterData)
       const sortedData = filterData?.map(session => {
+        console.log(session)
+        const transaction = session?.transaction !== undefined ? [...session.transaction] : []
         return {
           ...session,
-          transaction: [...session.transaction].sort((a, b) => {
+          transaction: transaction.sort((a, b) => {
             // Urutkan berdasarkan paymentMethod terlebih dahulu
             if (a.paymentMethod < b.paymentMethod) return -1;
             if (a.paymentMethod > b.paymentMethod) return 1;
