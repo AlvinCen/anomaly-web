@@ -553,6 +553,8 @@ const Table = () => {
 
 
     const handlePrintClick = async (data, kembali) => {
+        data.tax = isTax ? (data?.tax < 1 && data?.tax > 0 ? data?.tax : data?.tax / 100) : 0;
+        console.log(data)
         // await api.post("/data/update", {
         //     collection: "tableHistory",
         //     filter: { _id: data?._id },
