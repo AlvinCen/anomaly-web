@@ -4332,7 +4332,7 @@ const Table = () => {
                                                     <CFormLabel style={{ marginRight: "10px" }}>Discount </CFormLabel>
                                                     {!typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         Rp.</span>}
-                                                    <CFormInput type='text' value={formatNumber(10)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
+                                                    <CFormInput type='text' value={formatNumber(discount)} onChange={(e) => setDiscount(e.target.value.replace(/,/g, ""))} disabled={!isDiscount} />
                                                     {typeDiscount && <span className="input-group-text" id="basic-addon1" onClick={() => setTypeDiscount(!typeDiscount)}>
                                                         %</span>}
                                                 </CInputGroup>
