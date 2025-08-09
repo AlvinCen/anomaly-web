@@ -5315,7 +5315,10 @@ const Table = () => {
                                         }
                                     }, 0)
                                     var taxTotal = transaction?.tax > 0 ? Number(orderTotal) * transaction?.tax : 0
-                                    var discountTotal = (transaction?.typeDiscount ? (Number(orderTotal) * transaction?.discount > 1 ? transaction?.discount / 100 : transaction?.discount) : 0)
+                                    const discountTotal = transaction?.typeDiscount
+                                        ? (orderTotal * (Number(transaction?.discount) || 0)) / 100
+                                        : Number(transaction?.discount > 1) || 0;
+                                    // var discountTotal = (transaction?.typeDiscount ? (Number(orderTotal) * transaction?.discount > 1 ? transaction?.discount / 100 : transaction?.discount) : 0)
                                     var grandTotal = (orderTotal + tableTotal) + taxTotal - discountTotal
                                     element.push(<CTableHeaderCell colSpan={5}>Transaction - {idxTx + 1} {`(${transaction?.paymentMethod?.toUpperCase()} ${moment(transaction?.createdAt).format("DD MMMM YYYY  HH:mm:ss").toString()})`}</CTableHeaderCell>)
                                     element.push(transaction?.item?.map((item, idx) => {
@@ -5532,7 +5535,7 @@ const Table = () => {
 
                                             </CTableDataCell>
                                             <CTableDataCell style={{ textAlign: "right" }}>
-                                                <CFormLabel style={{ marginRight: "10px" }}>Discount ({transaction?.typeDiscount ? `${transaction?.discount * 100} %` : formatNumber(transaction?.discount)})</CFormLabel>
+                                                <CFormLabel style={{ marginRight: "10px" }}>Discount ({transaction?.typeDiscount ? `${transaction?.discount} %` : formatNumber(transaction?.discount)})</CFormLabel>
                                             </CTableDataCell>
                                             <CTableDataCell>{formatNumber(discountTotal)}</CTableDataCell>
                                         </CTableRow>)
@@ -5549,9 +5552,9 @@ const Table = () => {
                                         <CTableDataCell style={{ textAlign: "right" }} colSpan={action === "detail" && (detail?.status === "AKTIF" || detail?.status === "PAUSE") ? 5 : (detail?.status === "CLOSE" ? 3 : 4)}><b>Grand Total</b></CTableDataCell>
                                         <CTableDataCell>{formatNumber(grandTotal)}</CTableDataCell>
                                     </CTableRow>)
-                                    if (detail?.status === "PAYMENT") {
+                                    if (detail?.status === "PAYMENT" || detail?.status === "CLOSE") {
                                         element.push(<CTableRow>
-                                            <CTableDataCell style={{ textAlign: "right" }} colSpan={4}><b>Total Bayar</b></CTableDataCell>
+                                            <CTableDataCell style={{ textAlign: "right" }} colSpan={detail?.status === "PAYMENT" ? 4 : 3}><b>Total Bayar</b></CTableDataCell>
                                             <CTableDataCell>
                                                 <CFormLabel>{formatNumber(transaction?.pay)}</CFormLabel>
                                             </CTableDataCell>

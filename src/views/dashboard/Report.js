@@ -1442,9 +1442,9 @@ const Report = () => {
 
     // 3. Hitung Diskon (HANYA dari cafeTotal, sesuai kode asli)
     // Menggunakan logika yang lebih konsisten dari blok `discountTotal` di kode asli Anda
-    const discountAmount = transaction?.typeDiscount === '%'
+    const discountAmount = transaction?.typeDiscount
       ? (cafeTotal * (Number(transaction?.discount) || 0)) / 100
-      : Number(transaction?.discount) || 0;
+      : Number(transaction?.discount > 1) || 0;
 
     // 4. Hitung Grand Total
     const grandTotal = (tableTotal + cafeTotal) + taxAmount - discountAmount;
@@ -1530,7 +1530,7 @@ const Report = () => {
 
           // Akumulasi total untuk statistik utama
           totals.table += txTotals.tableTotal;
-          totals.cafe += txTotals.cafeTotal + txTotals.tax;
+          totals.cafe += txTotals.cafeTotal + txTotals.tax - txTotals.discount;
           totals.tax += txTotals.tax;
           totals.discount += txTotals.discount;
 
