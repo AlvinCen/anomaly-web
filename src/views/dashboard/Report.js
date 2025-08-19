@@ -1479,12 +1479,12 @@ const Report = () => {
 
       // Inisialisasi tmpChart untuk data chart
       const tmpChart = [];
-      
+
       // Hitung jarak hari antara startDate dan endDate
       const daysDifference = moment.duration(mEnd.diff(mStart)).asDays();
-      
+
       let chartStartDate, chartEndDate, chartFilteredCashiers;
-      
+
       if (daysDifference <= 7) {
         // Jika jarak ≤ 7 hari: tampilkan seminggu dari mEnd
         chartStartDate = moment(mEnd).subtract(6, "days").startOf("day");
@@ -1494,7 +1494,7 @@ const Report = () => {
         chartStartDate = mStart;
         chartEndDate = mEnd;
       }
-      
+
       // Filter data kasir untuk chart
       chartFilteredCashiers = cashier.filter(c =>
         moment(c.createdAt).tz("Asia/Jakarta").isBetween(chartStartDate, chartEndDate, undefined, '[]')
@@ -1510,8 +1510,16 @@ const Report = () => {
 
         // Proses setiap transaksi untuk chart
         for (const transaction of (c.transaction || [])) {
-          const txTotals = calculateTransactionTotals(transaction);
-          sessionTotalForChart += txTotals.grandTotal;
+          if (transaction.splitBill && transaction.splitBill.length > 0) {
+            for (const split of transaction.splitBill) {
+              // Untuk split bill, grand total harus dihitung dari item-itemnya
+              const txTotals = calculateTransactionTotals(split);
+              sessionTotalForChart += txTotals.grandTotal;
+            }
+          } else {
+            const txTotals = calculateTransactionTotals(transaction);
+            sessionTotalForChart += txTotals.grandTotal;
+          }
         }
 
         // Push total dari satu sesi kasir ke tmpChart
